@@ -399,6 +399,7 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
     const U32 dictIndexDelta       = prefixStartIndex - (U32)(dictEnd - dictBase);
     const U32 dictAndPrefixLength  = (U32)(ip - prefixStart + dictEnd - dictStart);
     const U32 dictHLog             = dictCParams->hashLog;
+    U32 dictMatchIndexNext; /* speculative dictMatchIndex for the next position, used for pipelining / prefetching */
 
     /* if a dictionary is still attached, it necessarily means that
      * it is within window size. So we just check it. */
@@ -421,6 +422,11 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
     assert(offset_1 <= dictAndPrefixLength);
     assert(offset_2 <= dictAndPrefixLength);
 
+_start:
+    /* Initialize pipeline */
+    dictMatchIndexNext = dictHashTable[ZSTD_hashPtr(ip, dictHLog, mls)];
+    PREFETCH_L1(dictBase + dictMatchIndexNext);
+
     /* Main Search Loop */
     while (ip < ilimit) {   /* < instead of <=, because repcode check at (ip+1) */
         size_t mLength;
@@ -432,6 +438,14 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
         const BYTE* repMatch = (repIndex < prefixStartIndex) ?
                                dictBase + (repIndex - dictIndexDelta) :
                                base + repIndex;
+
+        /* Speculative execution for the next iteration */
+        U32 const dictMatchIndex = dictMatchIndexNext;
+        const BYTE* ipNext = ip + ((ip-anchor) >> kSearchStrength) + stepSize; /* next position assuming no match */
+        assert(stepSize >= 1);
+        dictMatchIndexNext = dictHashTable[ZSTD_hashPtr(ipNext, dictHLog, mls)];
+        PREFETCH_L1(dictBase + dictMatchIndexNext);
+
         hashTable[h] = curr;   /* update hash table */
 
         if ( ((U32)((prefixStartIndex-1) - repIndex) >= 3) /* intentional underflow : ensure repIndex isn't overlapping dict + prefix */
@@ -441,13 +455,10 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
             ip++;
             ZSTD_storeSeq(seqStore, (size_t)(ip-anchor), anchor, iend, REPCODE1_TO_OFFBASE, mLength);
         } else if ( (matchIndex <= prefixStartIndex) ) {
-            size_t const dictHash = ZSTD_hashPtr(ip, dictHLog, mls);
-            U32 const dictMatchIndex = dictHashTable[dictHash];
             const BYTE* dictMatch = dictBase + dictMatchIndex;
             if (dictMatchIndex <= dictStartIndex ||
                 MEM_read32(dictMatch) != MEM_read32(ip)) {
-                assert(stepSize >= 1);
-                ip += ((ip-anchor) >> kSearchStrength) + stepSize;
+                ip = ipNext;
                 continue;
             } else {
                 /* found a dict match */
@@ -463,8 +474,7 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
             }
         } else if (MEM_read32(match) != MEM_read32(ip)) {
             /* it's not a match, and we're not going to check the dictionary */
-            assert(stepSize >= 1);
-            ip += ((ip-anchor) >> kSearchStrength) + stepSize;
+            ip = ipNext;
             continue;
         } else {
             /* found a regular match */
@@ -508,6 +518,8 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
                 break;
             }
         }
+
+        goto _start; /* re-initialize pipeline after finding match */
     }
 
     /* save reps for next block */
