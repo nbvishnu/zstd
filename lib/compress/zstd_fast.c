@@ -425,7 +425,6 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
 _start:
     /* Initialize pipeline */
     dictMatchIndexNext = dictHashTable[ZSTD_hashPtr(ip, dictHLog, mls)];
-    PREFETCH_L1(dictBase + dictMatchIndexNext);
 
     /* Main Search Loop */
     while (ip < ilimit) {   /* < instead of <=, because repcode check at (ip+1) */
@@ -439,12 +438,9 @@ _start:
                                dictBase + (repIndex - dictIndexDelta) :
                                base + repIndex;
 
-        /* Speculative execution for the next iteration */
-        U32 const dictMatchIndex = dictMatchIndexNext;
-        const BYTE* ipNext = ip + ((ip-anchor) >> kSearchStrength) + stepSize; /* next position assuming no match */
+        /* Guess for the next position */
+        const BYTE* ipNext = ip + ((ip-anchor) >> kSearchStrength) + stepSize;
         assert(stepSize >= 1);
-        dictMatchIndexNext = dictHashTable[ZSTD_hashPtr(ipNext, dictHLog, mls)];
-        PREFETCH_L1(dictBase + dictMatchIndexNext);
 
         hashTable[h] = curr;   /* update hash table */
 
@@ -455,7 +451,9 @@ _start:
             ip++;
             ZSTD_storeSeq(seqStore, (size_t)(ip-anchor), anchor, iend, REPCODE1_TO_OFFBASE, mLength);
         } else if ( (matchIndex <= prefixStartIndex) ) {
+            U32 const dictMatchIndex = dictMatchIndexNext;
             const BYTE* dictMatch = dictBase + dictMatchIndex;
+            dictMatchIndexNext = dictHashTable[ZSTD_hashPtr(ipNext, dictHLog, mls)];
             if (dictMatchIndex <= dictStartIndex ||
                 MEM_read32(dictMatch) != MEM_read32(ip)) {
                 ip = ipNext;
