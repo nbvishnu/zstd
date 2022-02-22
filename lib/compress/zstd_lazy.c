@@ -821,14 +821,14 @@ MEM_STATIC int ZSTD_isAligned(void const* ptr, size_t align) {
  * Performs prefetching for the hashTable and tagTable at a given row.
  */
 FORCE_INLINE_TEMPLATE void ZSTD_row_prefetch(U32 const* hashTable, U16 const* tagTable, U32 const relRow, U32 const rowLog) {
-    PREFETCH_L1(hashTable + relRow);
+    PREFETCH_NTA(hashTable + relRow);
     if (rowLog >= 5) {
-        PREFETCH_L1(hashTable + relRow + 16);
+        PREFETCH_NTA(hashTable + relRow + 16);
         /* Note: prefetching more of the hash table does not appear to be beneficial for 128-entry rows */
     }
-    PREFETCH_L1(tagTable + relRow);
+    PREFETCH_NTA(tagTable + relRow);
     if (rowLog == 6) {
-        PREFETCH_L1(tagTable + relRow + 32);
+        PREFETCH_NTA(tagTable + relRow + 32);
     }
     assert(rowLog == 4 || rowLog == 5 || rowLog == 6);
     assert(ZSTD_isAligned(hashTable + relRow, 64));                 /* prefetched hash row always 64-byte aligned */
@@ -1086,7 +1086,7 @@ ZSTD_row_getMatchMask(const BYTE* const tagRow, const BYTE tag, const U32 head, 
  *      - Generate a hash from a byte along with an additional 1-byte "short hash". The additional byte is our "tag"
  *      - The hashTable is effectively split into groups or "rows" of 16 or 32 entries of U32, and the hash determines
  *        which row to insert into.
- *      - Determine the correct position within the row to insert the entry into. Each row of 16 or 32 can
+ *      - DetermNTAine the correct position within the row to insert the entry into. Each row of 16 or 32 can
  *        be considered as a circular buffer with a "head" index that resides in the tagTable.
  *      - Also insert the "tag" into the equivalent row and position in the tagTable.
  *          - Note: The tagTable has 17 or 33 1-byte entries per row, due to 16 or 32 tags, and 1 "head" entry.
@@ -1179,9 +1179,9 @@ size_t ZSTD_RowFindBestMatch(
             if (matchIndex < lowLimit)
                 break;
             if ((dictMode != ZSTD_extDict) || matchIndex >= dictLimit) {
-                PREFETCH_L1(base + matchIndex);
+                PREFETCH_NTA(base + matchIndex);
             } else {
-                PREFETCH_L1(dictBase + matchIndex);
+                PREFETCH_NTA(dictBase + matchIndex);
             }
             matchBuffer[numMatches++] = matchIndex;
         }
