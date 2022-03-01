@@ -435,7 +435,7 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
                                dictBase + (repIndex - dictIndexDelta) :
                                base + repIndex;
         hashTable[h] = curr;   /* update hash table */
-
+        PREFETCH_L2(dictHashTable + ZSTD_hashPtr(ip+4, dictHLog, mls));
         if (dictPrefetchPtr >= dictPrefetchLimit) {
             PREFETCH_L2(dictPrefetchPtr);
             PREFETCH_L2(dictPrefetchPtr - 64);
