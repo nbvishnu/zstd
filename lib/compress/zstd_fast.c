@@ -431,9 +431,11 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
         size_t dictHash = ZSTD_hashPtr(ip0, dictHLog, mls);
         U32 dictMatchIndex = dictHashTable[dictHash];
         U32 matchIndex = hashTable[hash0];
-        U32 curr = (U32)(ip0 - base);
+        U32 curr;
 
+_innerLoop:
         /* Inner search loop */
+        curr = (U32)(ip0 - base);
         while (1) {
             const BYTE *match = base + matchIndex;
             const U32 repIndex = curr + 1 - offset_1;
@@ -502,7 +504,17 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
         ip0 += mLength;
         anchor = ip0;
 
-        if (ip0 <= ilimit) {
+        if (ip0 > ilimit) {
+            break;
+        } else {
+            size_t repLength2 = 0;
+
+            /* Prepare early for next iteration (assuming we will not find a repcode match below) */
+            hash0 = ZSTD_hashPtr(ip0, hlog, mls);
+            dictHash = ZSTD_hashPtr(ip0, dictHLog, mls);
+            dictMatchIndex = dictHashTable[dictHash];
+            matchIndex = hashTable[hash0];
+
             /* Fill Table */
             assert(base + curr + 2 > istart);  /* check base overflow */
             hashTable[ZSTD_hashPtr(base + curr + 2, hlog, mls)] = curr + 2;  /* here because curr+2 could be > iend-8 */
@@ -518,9 +530,8 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
                 if (((U32) ((prefixStartIndex - 1) - (U32) repIndex2) >= 3 /* intentional overflow */)
                     && (MEM_read32(repMatch2) == MEM_read32(ip0))) {
                     const BYTE *const repEnd2 = repIndex2 < prefixStartIndex ? dictEnd : iend;
-                    size_t const repLength2 =
-                            ZSTD_count_2segments(ip0 + 4, repMatch2 + 4, iend, repEnd2, prefixStart) + 4;
                     U32 tmpOffset = offset_2;
+                    repLength2 = ZSTD_count_2segments(ip0 + 4, repMatch2 + 4, iend, repEnd2, prefixStart) + 4;
                     offset_2 = offset_1;
                     offset_1 = tmpOffset;   /* swap offset_2 <=> offset_1 */
                     ZSTD_storeSeq(seqStore, 0, anchor, iend, REPCODE1_TO_OFFBASE, repLength2);
@@ -531,12 +542,15 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
                 }
                 break;
             }
-        }
 
-        /* Prepare for next iteration */
-        assert(ip0 == anchor);
-        assert(stepSize >= 1);
-        ip1 = ip0 + stepSize;
+             /* Prepare for next iteration */
+            assert(ip0 == anchor);
+            assert(stepSize >= 1);
+            ip1 = ip0 + stepSize;
+
+            /* We only need to re-initialize the pipeline if we moved ip0 */
+            if (!repLength2) goto _innerLoop;
+        }
     }
 
 _cleanup:
