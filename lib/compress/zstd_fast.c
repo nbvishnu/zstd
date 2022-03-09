@@ -458,7 +458,11 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
                     MEM_read32(dictMatch) == MEM_read32(ip0)) {
                     /* found a dict match */
                     U32 const offset = (U32) (curr - dictMatchIndex - dictIndexDelta);
-                    mLength = ZSTD_count_2segments(ip0 + 4, dictMatch + 4, iend, dictEnd, prefixStart) + 4;
+
+                    /* In DMS, matches are unlikely to continue from dict into input */
+                    const BYTE* const vEnd = MIN(ip0 + (dictEnd - dictMatch), iend);
+                    mLength = ZSTD_count(ip0 + 4, dictMatch + 4, vEnd) + 4;
+
                     while (((ip0 > anchor) & (dictMatch > dictStart))
                            && (ip0[-1] == dictMatch[-1])) {
                         ip0--;
