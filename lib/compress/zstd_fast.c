@@ -700,7 +700,13 @@ static size_t ZSTD_compressBlock_fast_extDict_generic(
                     continue;
                 }
                 break;
-    }   }   }
+            }
+        }
+
+        /* Prepare for next iteration */
+        assert(ip0 == anchor);
+        ip1 = ip0 + stepSize;
+    }
 
 _cleanup:
     /* save reps for next block */
