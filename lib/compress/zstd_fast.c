@@ -647,8 +647,24 @@ static size_t ZSTD_compressBlock_fast_extDict_generic(
                 ZSTD_storeSeq(seqStore, (size_t)(ip0-anchor), anchor, iend, REPCODE1_TO_OFFBASE, mLength);
                 break;
             } else {
-                if ( (matchIndex >= dictStartIndex) &&
-                     (MEM_read32(match) == MEM_read32(ip0)) ) {
+                if ( (matchIndex < dictStartIndex) ||
+                     (MEM_read32(match) != MEM_read32(ip0)) ) {
+                    /* Prepare for next iteration */
+                    matchIndex = hashTable[hash1];
+
+                    if (ip1 >= nextStep) {
+                        step++;
+                        nextStep += kStepIncr;
+                    }
+                    ip0 = ip1;
+                    ip1 = ip1 + step;
+                    if (ip1 > ilimit) goto _cleanup;
+
+                    curr = (U32)(ip0 - base);
+                    hash0 = hash1;
+                    continue;
+                }
+                {
                     const BYTE* const matchEnd = matchIndex < prefixStartIndex ? dictEnd : iend;
                     const BYTE* const lowMatchPtr = matchIndex < prefixStartIndex ? dictStart : prefixStart;
                     U32 const offset = curr - matchIndex;
@@ -659,20 +675,6 @@ static size_t ZSTD_compressBlock_fast_extDict_generic(
                     break;
                 }
             }
-
-            /* Prepare for next iteration */
-            matchIndex = hashTable[hash1];
-
-            if (ip1 >= nextStep) {
-                step++;
-                nextStep += kStepIncr;
-            }
-            ip0 = ip1;
-            ip1 = ip1 + step;
-            if (ip1 > ilimit) goto _cleanup;
-
-            curr = (U32)(ip0 - base);
-            hash0 = hash1;
         }   /* End inner search loop */
 
         /* match found */
