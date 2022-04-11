@@ -436,6 +436,7 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
         const BYTE* nextStep = ip0 + kStepIncr;
 
         /* Inner search loop */
+        #pragma clang loop unroll(disable)
         while (1) {
             const BYTE* match = base + matchIndex;
             const U32 repIndex = curr + 1 - offset_1;
