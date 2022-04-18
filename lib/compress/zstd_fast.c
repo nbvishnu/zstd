@@ -785,10 +785,9 @@ _offset: /* Requires: ip0, idx */
         /* Avoid branch in the backwards search */
         if ( MEM_isLittleEndian() && MEM_64bits() &&   /* haven't benchmarked this on non-AMD64 */
              (match0 - sizeof(size_t) >= lowMatchPtr) &
-             (ip0 - sizeof(size_t) >= prefixStart) ) {
+             (ip0 - sizeof(size_t) >= anchor) ) {
             diff = MEM_readST(ip0 - sizeof(size_t)) ^ MEM_readST(match0 - sizeof(size_t));
             { size_t backwardsLength = diff ? ZSTD_countLeadingZeros64(diff) >> 3 : sizeof(size_t);
-              backwardsLength = MIN(backwardsLength, (size_t)(ip0 - anchor));
               ip0 -= backwardsLength; match0 -= backwardsLength; mLength += backwardsLength; }
             assert(MEM_read32(ip0) == MEM_read32(match0));
         }
