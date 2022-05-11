@@ -625,7 +625,8 @@ static size_t ZSTD_compressBlock_fast_extDict_generic(
     const BYTE* nextStep;
     const size_t kStepIncr = (1 << (kSearchStrength - 1));
 
-    int skipRepcodeSafetyCheck = 0;
+    const BYTE* optimizedRepBase = 0;
+    const BYTE* optimizedRepMatch = 0;
 
     (void)hasStep; /* not currently specialized on whether it's accelerated */
 
@@ -662,18 +663,42 @@ _start: /* Requires: ip0 */
     idx = hashTable[hash0];
     idxBase = idx < prefixStartIndex ? dictBase : base;
 
+_repcodeInit:
+    optimizedRepMatch = 0;
+    if (offset_1 > 0) {
+        U32 const startRepIndex = (U32)(ip2 - base) - offset_1;
+        U32 const endRepIndex = (U32)(nextStep - base) - offset_1;
+        const BYTE* const startRepBase = startRepIndex < prefixStartIndex ? dictBase : base;
+        const BYTE* const endRepBase = endRepIndex < prefixStartIndex ? dictBase : base;
+
+        if ( (startRepBase == endRepBase)
+                & ((U32)(prefixStartIndex - startRepIndex) >= 4)
+                & ((U32)(prefixStartIndex - endRepIndex) >= 4) ) {
+            // ah -- need to check that both ends are safe as well as that they are in the same segment
+            assert((U32)(prefixStartIndex - startRepIndex) >= 4);  /* intentional underflow */
+            assert((U32)(prefixStartIndex - endRepIndex) >= 4);  /* intentional underflow */
+            optimizedRepBase = startRepBase;
+            optimizedRepMatch = startRepBase + startRepIndex;
+        }
+    }
+
     do {
         {   /* load repcode match for ip[2] */
-            U32 const current2 = (U32)(ip2 - base);
-            U32 const repIndex = current2 - offset_1;
-            const BYTE* const repBase = repIndex < prefixStartIndex ? dictBase : base;
             U32 rval;
-            if ( skipRepcodeSafetyCheck || (
-                    ((U32)(prefixStartIndex - repIndex) >= 4) /* intentional underflow */
-                  & ((offset_1) > 0) ) ) {
-                rval = MEM_read32(repBase + repIndex);
+            if (optimizedRepMatch) {
+                assert(optimizedRepBase);
+                assert((U32)(optimizedRepMatch - optimizedRepBase) == (U32)(ip2 - base) - offset_1);
+                rval = MEM_read32(optimizedRepMatch);
+                optimizedRepMatch += step;
             } else {
-                rval = MEM_read32(ip2) ^ 1; /* guaranteed to not match. */
+                U32 const repIndex = (U32)(ip2 - base) - offset_1;
+                const BYTE* const repBase = repIndex < prefixStartIndex ? dictBase : base;
+                if ( ((U32)(prefixStartIndex - repIndex) >= 4) /* intentional underflow */
+                      & (offset_1 > 0) ) {
+                    rval = MEM_read32(repBase + repIndex);
+                } else {
+                    rval = MEM_read32(ip2) ^ 1; /* guaranteed to not match. */
+                }
             }
 
             /* write back hash table entry */
@@ -682,9 +707,17 @@ _start: /* Requires: ip0 */
 
             /* check repcode at ip[2] */
             if (MEM_read32(ip2) == rval) {
+                if (optimizedRepMatch) {
+                    match0 = optimizedRepMatch - step;
+                    matchEnd = optimizedRepBase == dictBase ? dictEnd : iend;
+                } else {
+                    U32 const repIndex = (U32)(ip2 - base) - offset_1;
+                    const BYTE* const repBase = repIndex < prefixStartIndex ? dictBase : base;
+                    const BYTE* const repEnd = repIndex < prefixStartIndex ? dictEnd : iend;
+                    match0 = repIndex + repBase;
+                    matchEnd = repEnd;
+                }
                 ip0 = ip2;
-                match0 = repBase + repIndex;
-                matchEnd = repIndex < prefixStartIndex ? dictEnd : iend;
                 assert((match0 != prefixStart) & (match0 != dictStart));
                 mLength = ip0[-1] == match0[-1];
                 ip0 -= mLength;
@@ -753,7 +786,7 @@ _start: /* Requires: ip0 */
             PREFETCH_L1(ip1 + 64);
             PREFETCH_L1(ip1 + 128);
             nextStep += kStepIncr;
-            skipRepcodeSafetyCheck = 0;
+            if (ip3 < ilimit) goto _repcodeInit; // TODO comment
         }
     } while (ip3 < ilimit);
 
@@ -799,8 +832,6 @@ _match: /* Requires: ip0, match0, offcode, matchEnd */
     ip0 += mLength;
     anchor = ip0;
 
-    skipRepcodeSafetyCheck = (matchEnd == iend) || ((match0 + mLength + 70 + stepSize + 4) <= dictEnd);  /* intentional underflow */
-
     /* write next hash table entry */
     if (ip1 < ip0) {
         hashTable[hash1] = (U32)(ip1 - base);
@@ -821,7 +852,6 @@ _match: /* Requires: ip0, match0, offcode, matchEnd */
                 const BYTE* const repEnd2 = repIndex2 < prefixStartIndex ? dictEnd : iend;
                 size_t const repLength2 = ZSTD_count_2segments(ip0+4, repMatch2+4, iend, repEnd2, prefixStart) + 4;
                 { U32 const tmpOffset = offset_2; offset_2 = offset_1; offset_1 = tmpOffset; }  /* swap offset_2 <=> offset_1 */
-                skipRepcodeSafetyCheck = (U32)(prefixStartIndex - (repIndex2 + repLength2)) >= (70 + stepSize + 4);  /* intentional underflow */
                 ZSTD_storeSeq(seqStore, 0 /*litlen*/, anchor, iend, REPCODE1_TO_OFFBASE, repLength2);
                 hashTable[ZSTD_hashPtr(ip0, hlog, mls)] = (U32)(ip0-base);
                 ip0 += repLength2;
