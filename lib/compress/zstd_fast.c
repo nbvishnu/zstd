@@ -664,29 +664,19 @@ _start: /* Requires: ip0 */
     idxBase = idx < prefixStartIndex ? dictBase : base;
 
 _repcodeInit:
-    optimizedRepMatch = 0;
-    if (offset_1 > 0) {
-        U32 const startRepIndex = (U32)(ip2 - base) - offset_1;
-        U32 const endRepIndex = (U32)(nextStep - base) - offset_1;
-        const BYTE* const startRepBase = startRepIndex < prefixStartIndex ? dictBase : base;
-        const BYTE* const endRepBase = endRepIndex < prefixStartIndex ? dictBase : base;
-
-        if ( (startRepBase == endRepBase)
-                & ((U32)(prefixStartIndex - startRepIndex) >= 4)
-                & ((U32)(prefixStartIndex - endRepIndex) >= 4) ) {
-            // ah -- need to check that both ends are safe as well as that they are in the same segment
-            assert((U32)(prefixStartIndex - startRepIndex) >= 4);  /* intentional underflow */
-            assert((U32)(prefixStartIndex - endRepIndex) >= 4);  /* intentional underflow */
-            optimizedRepBase = startRepBase;
-            optimizedRepMatch = startRepBase + startRepIndex;
-        }
-    }
+    {   U32 const startRepIndex = (U32)(ip2 - base) - offset_1;
+        U32 const threshold = 4 + (step << (kSearchStrength - 1));
+        optimizedRepBase = startRepIndex < prefixStartIndex ? dictBase : base;
+        if ( ((U32)(prefixStartIndex - startRepIndex) >= threshold) & (offset_1 > 0) ) {
+            optimizedRepMatch = optimizedRepBase + startRepIndex;
+        } else {
+            optimizedRepMatch = 0;
+    }   }
 
     do {
         {   /* load repcode match for ip[2] */
             U32 rval;
-            if (optimizedRepMatch) {
-                assert(optimizedRepBase);
+            if (LIKELY(optimizedRepMatch != 0)) {
                 assert((U32)(optimizedRepMatch - optimizedRepBase) == (U32)(ip2 - base) - offset_1);
                 rval = MEM_read32(optimizedRepMatch);
                 optimizedRepMatch += step;
