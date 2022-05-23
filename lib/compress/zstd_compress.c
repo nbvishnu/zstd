@@ -4205,7 +4205,7 @@ static size_t ZSTD_loadDictionaryContent(ZSTD_matchState_t* ms,
                                          ZSTD_cwksp* ws,
                                          ZSTD_CCtx_params const* params,
                                          const void* src, size_t srcSize,
-                                         ZSTD_dictTableLoadMethod_e dtlm)
+                                         ZSTD_dictTableLoadMethod_e dtlm, U32 const forCCtx)
 {
     const BYTE* ip = (const BYTE*) src;
     const BYTE* const iend = ip + srcSize;
@@ -4252,7 +4252,7 @@ static size_t ZSTD_loadDictionaryContent(ZSTD_matchState_t* ms,
     switch(params->cParams.strategy)
     {
     case ZSTD_fast:
-        ZSTD_fillHashTable(ms, iend, dtlm);
+        ZSTD_fillHashTable(ms, iend, dtlm, forCCtx);
         break;
     case ZSTD_dfast:
         ZSTD_fillDoubleHashTable(ms, iend, dtlm);
@@ -4421,7 +4421,8 @@ static size_t ZSTD_loadZstdDictionary(ZSTD_compressedBlockState_t* bs,
                                       ZSTD_CCtx_params const* params,
                                       const void* dict, size_t dictSize,
                                       ZSTD_dictTableLoadMethod_e dtlm,
-                                      void* workspace)
+                                      void* workspace,
+                                      U32 const forCCtx)
 {
     const BYTE* dictPtr = (const BYTE*)dict;
     const BYTE* const dictEnd = dictPtr + dictSize;
@@ -4439,7 +4440,7 @@ static size_t ZSTD_loadZstdDictionary(ZSTD_compressedBlockState_t* bs,
     {
         size_t const dictContentSize = (size_t)(dictEnd - dictPtr);
         FORWARD_IF_ERROR(ZSTD_loadDictionaryContent(
-            ms, NULL, ws, params, dictPtr, dictContentSize, dtlm), "");
+            ms, NULL, ws, params, dictPtr, dictContentSize, dtlm, forCCtx), "");
     }
     return dictID;
 }
@@ -4455,7 +4456,8 @@ ZSTD_compress_insertDictionary(ZSTD_compressedBlockState_t* bs,
                          const void* dict, size_t dictSize,
                                ZSTD_dictContentType_e dictContentType,
                                ZSTD_dictTableLoadMethod_e dtlm,
-                               void* workspace)
+                               void* workspace,
+                               U32 const forCCtx)
 {
     DEBUGLOG(4, "ZSTD_compress_insertDictionary (dictSize=%u)", (U32)dictSize);
     if ((dict==NULL) || (dictSize<8)) {
@@ -4467,13 +4469,13 @@ ZSTD_compress_insertDictionary(ZSTD_compressedBlockState_t* bs,
 
     /* dict restricted modes */
     if (dictContentType == ZSTD_dct_rawContent)
-        return ZSTD_loadDictionaryContent(ms, ls, ws, params, dict, dictSize, dtlm);
+        return ZSTD_loadDictionaryContent(ms, ls, ws, params, dict, dictSize, dtlm, forCCtx);
 
     if (MEM_readLE32(dict) != ZSTD_MAGIC_DICTIONARY) {
         if (dictContentType == ZSTD_dct_auto) {
             DEBUGLOG(4, "raw content dictionary detected");
             return ZSTD_loadDictionaryContent(
-                ms, ls, ws, params, dict, dictSize, dtlm);
+                ms, ls, ws, params, dict, dictSize, dtlm, forCCtx);
         }
         RETURN_ERROR_IF(dictContentType == ZSTD_dct_fullDict, dictionary_wrong, "");
         assert(0);   /* impossible */
@@ -4481,7 +4483,7 @@ ZSTD_compress_insertDictionary(ZSTD_compressedBlockState_t* bs,
 
     /* dict as full zstd dictionary */
     return ZSTD_loadZstdDictionary(
-        bs, ms, ws, params, dict, dictSize, dtlm, workspace);
+        bs, ms, ws, params, dict, dictSize, dtlm, workspace, forCCtx);
 }
 
 #define ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF (128 KB)
@@ -4524,11 +4526,11 @@ static size_t ZSTD_compressBegin_internal(ZSTD_CCtx* cctx,
                         cctx->blockState.prevCBlock, &cctx->blockState.matchState,
                         &cctx->ldmState, &cctx->workspace, &cctx->appliedParams, cdict->dictContent,
                         cdict->dictContentSize, cdict->dictContentType, dtlm,
-                        cctx->entropyWorkspace)
+                        cctx->entropyWorkspace, 1)
               : ZSTD_compress_insertDictionary(
                         cctx->blockState.prevCBlock, &cctx->blockState.matchState,
                         &cctx->ldmState, &cctx->workspace, &cctx->appliedParams, dict, dictSize,
-                        dictContentType, dtlm, cctx->entropyWorkspace);
+                        dictContentType, dtlm, cctx->entropyWorkspace, 1);
         FORWARD_IF_ERROR(dictID, "ZSTD_compress_insertDictionary failed");
         assert(dictID <= UINT_MAX);
         cctx->dictID = (U32)dictID;
@@ -4832,7 +4834,7 @@ static size_t ZSTD_initCDict_internal(
         {   size_t const dictID = ZSTD_compress_insertDictionary(
                     &cdict->cBlockState, &cdict->matchState, NULL, &cdict->workspace,
                     &params, cdict->dictContent, cdict->dictContentSize,
-                    dictContentType, ZSTD_dtlm_full, cdict->entropyWorkspace);
+                    dictContentType, ZSTD_dtlm_full, cdict->entropyWorkspace, 0);
             FORWARD_IF_ERROR(dictID, "ZSTD_compress_insertDictionary failed");
             assert(dictID <= (size_t)(U32)-1);
             cdict->dictID = (U32)dictID;
