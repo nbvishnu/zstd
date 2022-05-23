@@ -2131,16 +2131,15 @@ static size_t ZSTD_resetCCtx_byCopyingCDict(ZSTD_CCtx* cctx,
                                                             : 0;
         size_t const hSize =  (size_t)1 << cdict_cParams->hashLog;
 
-        /* ZSTD_memcpy(cctx->blockState.matchState.hashTable,
-               cdict->matchState.hashTable,
-               hSize * sizeof(U32)); */
-
-        // TODO make this "if fast" only
-        {
+        if (cctx->appliedParams.cParams.strategy == ZSTD_fast){
             size_t i;
             for (i=0; i < hSize; i++) {
                 cdict->matchState.hashTable[i] = cctx->blockState.matchState.hashTable[i] >> 8; // TODO make this reference macro
             }
+        } else {
+            ZSTD_memcpy(cctx->blockState.matchState.hashTable,
+                cdict->matchState.hashTable,
+                hSize * sizeof(U32));
         }
 
         /* Do not copy cdict's chainTable if cctx has parameters such that it would not use chainTable */
