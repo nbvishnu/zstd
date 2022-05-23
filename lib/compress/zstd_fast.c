@@ -80,7 +80,7 @@ static void ZSTD_fillHashTableForCCtx(ZSTD_matchState_t* ms,
                 size_t const hash = ZSTD_hashPtr(ip + p, hBits, mls);
                 if (hashTable[hash] == 0) {  /* not yet filled */
                     hashTable[hash] = curr + p;
-                }   }   }   }
+    }   }   }   }
 }
 
 void ZSTD_fillHashTable(ZSTD_matchState_t* ms,
@@ -89,9 +89,9 @@ void ZSTD_fillHashTable(ZSTD_matchState_t* ms,
                         const U32 forCCtx)
 {
     if (forCCtx) {
-        ZSTD_fillHashTableForCDict(ms, end, dtlm);
-    } else {
         ZSTD_fillHashTableForCCtx(ms, end, dtlm);
+    } else {
+        ZSTD_fillHashTableForCDict(ms, end, dtlm);
     }
 }
 
