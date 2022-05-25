@@ -2134,7 +2134,7 @@ static size_t ZSTD_resetCCtx_byCopyingCDict(ZSTD_CCtx* cctx,
         if (cctx->appliedParams.cParams.strategy == ZSTD_fast){
             size_t i;
             for (i=0; i < hSize; i++) {
-                cdict->matchState.hashTable[i] = cctx->blockState.matchState.hashTable[i] >> 8; // TODO make this reference macro
+                cctx->blockState.matchState.hashTable[i] = cdict->matchState.hashTable[i] >> 8; // TODO make this reference macro
             }
         } else {
             ZSTD_memcpy(cctx->blockState.matchState.hashTable,
