@@ -15,9 +15,9 @@
 #define ZSTD_FAST_TAG_MASK ((1u << ZSTD_FAST_TAG_BITS) - 1)
 
 MEM_STATIC FORCE_INLINE_ATTR
-void writeTaggedIndex(U32* const hashTable, size_t hashAndTag, size_t index) {
+void writeTaggedIndex(U32* const hashTable, size_t hashAndTag, U32 index) {
     size_t const hash = hashAndTag >> ZSTD_FAST_TAG_BITS;
-    size_t const tag = hashAndTag & ZSTD_FAST_TAG_MASK;
+    U32 const tag = (U32)(hashAndTag & ZSTD_FAST_TAG_MASK);
     assert(index >> (32 - ZSTD_FAST_TAG_BITS) == 0);
     hashTable[hash] = (index << ZSTD_FAST_TAG_BITS) | tag;
 }
