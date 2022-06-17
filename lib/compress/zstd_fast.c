@@ -537,44 +537,41 @@ size_t ZSTD_compressBlock_fast_dictMatchState_generic(
                 break;
             }
 
-            if (dictTagsMatch) {
+            if (matchIndex > prefixStartIndex) {
+                if (MEM_read32(match) == MEM_read32(ip0)) {
+                    /* found a regular match */
+                    U32 const offset = (U32) (ip0 - match);
+                    mLength = ZSTD_count(ip0 + 4, match + 4, iend) + 4;
+                    while (((ip0 > anchor) & (match > prefixStart))
+                        && (ip0[-1] == match[-1])) {
+                        ip0--;
+                        match--;
+                        mLength++;
+                    } /* catch up */
+                    offset_2 = offset_1;
+                    offset_1 = offset;
+                    ZSTD_storeSeq(seqStore, (size_t) (ip0 - anchor), anchor, iend, OFFSET_TO_OFFBASE(offset), mLength);
+                    break;
+                }
+            } else if (dictTagsMatch) {
                 /* Found a possible dict match */
                 const U32 dictMatchIndex = dictMatchIndexAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;
                 const BYTE* dictMatch = dictBase + dictMatchIndex;
                 if (dictMatchIndex > dictStartIndex &&
                     MEM_read32(dictMatch) == MEM_read32(ip0)) {
-                    /* To replicate extDict parse behavior, we only use dict matches when the normal matchIndex is invalid */
-                    if (matchIndex <= prefixStartIndex) {
-                        U32 const offset = (U32) (curr - dictMatchIndex - dictIndexDelta);
-                        mLength = ZSTD_count_2segments(ip0 + 4, dictMatch + 4, iend, dictEnd, prefixStart) + 4;
-                        while (((ip0 > anchor) & (dictMatch > dictStart))
-                            && (ip0[-1] == dictMatch[-1])) {
-                            ip0--;
-                            dictMatch--;
-                            mLength++;
-                        } /* catch up */
-                        offset_2 = offset_1;
-                        offset_1 = offset;
-                        ZSTD_storeSeq(seqStore, (size_t) (ip0 - anchor), anchor, iend, OFFSET_TO_OFFBASE(offset), mLength);
-                        break;
-                    }
+                    U32 const offset = (U32) (curr - dictMatchIndex - dictIndexDelta);
+                    mLength = ZSTD_count_2segments(ip0 + 4, dictMatch + 4, iend, dictEnd, prefixStart) + 4;
+                    while (((ip0 > anchor) & (dictMatch > dictStart))
+                        && (ip0[-1] == dictMatch[-1])) {
+                        ip0--;
+                        dictMatch--;
+                        mLength++;
+                    } /* catch up */
+                    offset_2 = offset_1;
+                    offset_1 = offset;
+                    ZSTD_storeSeq(seqStore, (size_t) (ip0 - anchor), anchor, iend, OFFSET_TO_OFFBASE(offset), mLength);
+                    break;
                 }
-            }
-
-            if (matchIndex > prefixStartIndex && MEM_read32(match) == MEM_read32(ip0)) {
-                /* found a regular match */
-                U32 const offset = (U32) (ip0 - match);
-                mLength = ZSTD_count(ip0 + 4, match + 4, iend) + 4;
-                while (((ip0 > anchor) & (match > prefixStart))
-                       && (ip0[-1] == match[-1])) {
-                    ip0--;
-                    match--;
-                    mLength++;
-                } /* catch up */
-                offset_2 = offset_1;
-                offset_1 = offset;
-                ZSTD_storeSeq(seqStore, (size_t) (ip0 - anchor), anchor, iend, OFFSET_TO_OFFBASE(offset), mLength);
-                break;
             }
 
             /* Prepare for next iteration */
