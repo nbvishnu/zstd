@@ -2,6 +2,10 @@
 
 set -e
 
+unset ZSTD_CLEVEL
+unset ZSTD_NBTHREADS
+
+
 die() {
     println "$@" 1>&2
     exit 1
@@ -88,7 +92,6 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 PRGDIR="$SCRIPT_DIR/../programs"
 TESTDIR="$SCRIPT_DIR/../tests"
 UNAME=$(uname)
-ZSTDGREP="$PRGDIR/zstdgrep"
 
 detectedTerminal=false
 if [ -t 0 ] && [ -t 1 ]
@@ -182,6 +185,7 @@ else
 fi
 
 
+zstd -vvV
 
 println "\n===>  simple tests "
 
@@ -208,6 +212,7 @@ zstd -c --fast=0 tmp > $INTOVOID && die "--fast must not accept value 0"
 println "test : too large numeric argument"
 zstd --fast=9999999999 -f tmp  && die "should have refused numeric value"
 println "test : set compression level with environment variable ZSTD_CLEVEL"
+
 ZSTD_CLEVEL=12  zstd -f tmp # positive compression level
 ZSTD_CLEVEL=-12 zstd -f tmp # negative compression level
 ZSTD_CLEVEL=+12 zstd -f tmp # valid: verbose '+' sign
@@ -219,6 +224,11 @@ ZSTD_CLEVEL=3a7 zstd -f tmp # malformed env var, warn and revert to default sett
 ZSTD_CLEVEL=50000000000 zstd -f tmp # numeric value too large, warn and revert to default setting
 println "test : override ZSTD_CLEVEL with command line option"
 ZSTD_CLEVEL=12  zstd --fast=3 -f tmp # overridden by command line option
+
+# temporary envvar changes in the above tests would actually persist in macos /bin/sh
+unset ZSTD_CLEVEL
+
+
 println "test : compress to stdout"
 zstd tmp -c > tmpCompressed
 zstd tmp --stdout > tmpCompressed       # long command format
@@ -258,10 +268,13 @@ zstd -dc - < tmp.zst > $INTOVOID
 zstd -d    < tmp.zst > $INTOVOID   # implicit stdout when stdin is used
 zstd -d  - < tmp.zst > $INTOVOID
 println "test : impose memory limitation (must fail)"
-zstd -d -f tmp.zst -M2K -c > $INTOVOID && die "decompression needs more memory than allowed"
-zstd -d -f tmp.zst --memlimit=2K -c > $INTOVOID && die "decompression needs more memory than allowed"  # long command
-zstd -d -f tmp.zst --memory=2K -c > $INTOVOID && die "decompression needs more memory than allowed"  # long command
-zstd -d -f tmp.zst --memlimit-decompress=2K -c > $INTOVOID && die "decompression needs more memory than allowed"  # long command
+datagen -g500K > tmplimit
+zstd -f tmplimit
+zstd -d -f tmplimit.zst -M2K -c > $INTOVOID && die "decompression needs more memory than allowed"
+zstd -d -f tmplimit.zst --memlimit=2K -c > $INTOVOID && die "decompression needs more memory than allowed"  # long command
+zstd -d -f tmplimit.zst --memory=2K -c > $INTOVOID && die "decompression needs more memory than allowed"  # long command
+zstd -d -f tmplimit.zst --memlimit-decompress=2K -c > $INTOVOID && die "decompression needs more memory than allowed"  # long command
+rm -f tmplimit tmplimit.zst
 println "test : overwrite protection"
 zstd -q tmp && die "overwrite check failed!"
 println "test : force overwrite"
@@ -310,17 +323,6 @@ if [ "$isWindows" = false ]; then
     readelf -lW "$ZSTD_BIN" | grep 'GNU_STACK .* RW ' || die "zstd binary has executable stack!"
   fi
 fi
-
-println "\n===> zstdgrep tests"
-ln -sf "$ZSTD_BIN" zstdcat
-rm -f tmp_grep
-echo "1234" > tmp_grep
-zstd -f tmp_grep
-lines=$(ZCAT=./zstdcat "$ZSTDGREP" 2>&1 "1234" tmp_grep tmp_grep.zst | wc -l)
-test 2 -eq $lines
-ZCAT=./zstdcat "$ZSTDGREP" 2>&1 "1234" tmp_grep_bad.zst && die "Should have failed"
-ZCAT=./zstdcat "$ZSTDGREP" 2>&1 "1234" tmp_grep_bad.zst | grep "No such file or directory" || true
-rm -f tmp_grep*
 
 println "\n===>  --exclude-compressed flag"
 rm -rf precompressedFilterTestDir
@@ -374,6 +376,11 @@ println "Test completed"
 println "\n===>  recursive mode test "
 # combination of -r with empty list of input file
 zstd -c -r < tmp > tmp.zst
+
+# combination of -r with empty folder
+mkdir -p tmpEmptyDir
+zstd -r tmpEmptyDir
+rm -rf tmpEmptyDir
 
 
 println "\n===>  file removal"
@@ -728,11 +735,11 @@ test -f tmp4
 
 println "test : survive the list of files with too long filenames (--filelist=FILE)"
 datagen -g5M > tmp_badList
-zstd -f --filelist=tmp_badList && die "should have failed : file name length is too long"
+zstd -qq -f --filelist=tmp_badList && die "should have failed : file name length is too long"  # printing very long text garbage on console will cause CI failure
 
 println "test : survive a list of files which is text garbage (--filelist=FILE)"
 datagen > tmp_badList
-zstd -f --filelist=tmp_badList && die "should have failed : list is text garbage"
+zstd -qq -f --filelist=tmp_badList && die "should have failed : list is text garbage"  # printing very long text garbage on console will cause CI failure
 
 println "test : survive a list of files which is binary garbage (--filelist=FILE)"
 datagen -P0 -g1M > tmp_badList
@@ -1441,6 +1448,8 @@ then
     ZSTD_NBTHREADS=50000000000 zstd -f mt_tmp # numeric value too large, warn and revert to default setting=
     ZSTD_NBTHREADS=2  zstd -f mt_tmp # correct usage
     ZSTD_NBTHREADS=1  zstd -f mt_tmp # correct usage: single thread
+    # temporary envvar changes in the above tests would actually persist in macos /bin/sh
+    unset ZSTD_NBTHREADS
     rm -f mt_tmp*
 
     println "\n===>  ovLog tests "
@@ -1575,6 +1584,44 @@ elif [ "$longCSize19wlog23" -gt "$optCSize19wlog23" ]; then
     exit 1
 fi
 
+println "\n===>  zstd asyncio tests "
+
+addFrame() {
+    datagen -g2M -s$2 >> tmp_uncompressed
+    datagen -g2M -s$2 | zstd -1 --format=$1 >> tmp_compressed.zst
+}
+
+addTwoFrames() {
+  addFrame $1 1
+  addFrame $1 2
+}
+
+testAsyncIO() {
+  roundTripTest -g2M "3 --asyncio --format=$1"
+  roundTripTest -g2M "3 --no-asyncio --format=$1"
+}
+
+rm -f tmp_compressed tmp_uncompressed
+testAsyncIO zstd
+addTwoFrames zstd
+if [ $GZIPMODE -eq 1 ]; then
+  testAsyncIO gzip
+  addTwoFrames gzip
+fi
+if [ $LZMAMODE -eq 1 ]; then
+  testAsyncIO lzma
+  addTwoFrames lzma
+fi
+if [ $LZ4MODE -eq 1 ]; then
+  testAsyncIO lz4
+  addTwoFrames lz4
+fi
+cat tmp_uncompressed | $MD5SUM > tmp2
+zstd -d tmp_compressed.zst --asyncio -c | $MD5SUM > tmp1
+$DIFF -q tmp1 tmp2
+rm tmp1
+zstd -d tmp_compressed.zst --no-asyncio -c | $MD5SUM > tmp1
+$DIFF -q tmp1 tmp2
 
 if [ "$1" != "--test-large-data" ]; then
     println "Skipping large data tests"
