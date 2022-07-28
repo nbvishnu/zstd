@@ -24,6 +24,7 @@
 #include "../common/error_private.h"
 #include "../common/zstd_internal.h"
 #include "../common/bits.h"       /* ZSTD_highbit32, ZSTD_countTrailingZeros64 */
+#include <stdio.h>
 
 /* **************************************************************
 *  Constants
@@ -383,6 +384,15 @@ size_t HUF_readDTableX1_wksp_bmi2(HUF_DTable* DTable, const void* src, size_t sr
      * rankStart[0] is not filled because there are no entries in the table for
      * weight 0.
      */
+
+    /* print out rankVal for tinyNN */
+    printf("BLOCK_%d,", global_block_count++);
+    printf("STRATEGY_X1,");
+    for (size_t i=0; i <= tableLog; i++) {
+        printf("%d", wksp->rankVal[i]);
+        if (i < tableLog) printf(",");
+    }
+    printf("\n");
     {
         int n;
         int nextRankStart = 0;
@@ -1084,6 +1094,15 @@ size_t HUF_readDTableX2_wksp_bmi2(HUF_DTable* DTable,
 
     /* find maxWeight */
     for (maxW = tableLog; wksp->rankStats[maxW]==0; maxW--) {}  /* necessarily finds a solution before 0 */
+
+    /* print out rankStats for tinyNN */
+    printf("BLOCK_%d,", global_block_count++);
+    printf("STRATEGY_X2,");
+    for (size_t i=0; i <= tableLog; i++) {
+        printf("%d", wksp->rankStats[i]);
+        if (i < tableLog) printf(",");
+    }
+    printf("\n");
 
     /* Get start index of each weight */
     {   U32 w, nextRankStart = 0;

@@ -18,6 +18,9 @@ extern "C" {
 #include <limits.h>   /* INT_MAX */
 #include <stddef.h>   /* size_t */
 
+/* Hack for tinyNN */
+extern int global_block_count;
+
 
 /* =====   ZSTDLIB_API : control library symbols visibility   ===== */
 #ifndef ZSTDLIB_VISIBLE

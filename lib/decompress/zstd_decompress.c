@@ -72,7 +72,7 @@
 #  include "../legacy/zstd_legacy.h"
 #endif
 
-
+int global_block_count = 0;
 
 /*************************************
  * Multiple DDicts Hashset internals *
