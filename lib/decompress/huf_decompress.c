@@ -25,6 +25,7 @@
 #include "../common/zstd_internal.h"
 #include "../common/bits.h"       /* ZSTD_highbit32, ZSTD_countTrailingZeros64 */
 #include <stdio.h>
+#include <time.h>
 
 /* **************************************************************
 *  Constants
@@ -344,6 +345,7 @@ size_t HUF_readDTableX1_wksp(HUF_DTable* DTable, const void* src, size_t srcSize
 
 size_t HUF_readDTableX1_wksp_bmi2(HUF_DTable* DTable, const void* src, size_t srcSize, void* workSpace, size_t wkspSize, int bmi2)
 {
+    clock_t const start = clock();
     U32 tableLog = 0;
     U32 nbSymbols = 0;
     size_t iSize;
@@ -385,14 +387,6 @@ size_t HUF_readDTableX1_wksp_bmi2(HUF_DTable* DTable, const void* src, size_t sr
      * weight 0.
      */
 
-    /* print out rankVal for tinyNN */
-    printf("BLOCK_%d,", global_block_count++);
-    printf("STRATEGY_X1,");
-    for (size_t i=0; i <= tableLog; i++) {
-        printf("%d", wksp->rankVal[i]);
-        if (i < tableLog) printf(",");
-    }
-    printf("\n");
     {
         int n;
         int nextRankStart = 0;
@@ -486,6 +480,19 @@ size_t HUF_readDTableX1_wksp_bmi2(HUF_DTable* DTable, const void* src, size_t sr
             rankStart += symbolCount * length;
         }
     }
+
+    clock_t const end = clock();
+
+    /* print out rankVal for tinyNN */
+    printf("CHOSEN_STRATEGY_X1,");
+    printf("%u,", tableLog);
+    for (size_t i=0; i <= tableLog; i++) {
+        printf("%d", wksp->rankVal[i]);
+        if (i < tableLog) printf(",");
+    }
+    printf("\n");
+    printf("%lu\n", end - start);
+
     return iSize;
 }
 
@@ -742,12 +749,13 @@ HUF_DGEN(HUF_decompress1X1_usingDTable_internal)
 static size_t HUF_decompress4X1_usingDTable_internal(void* dst, size_t dstSize, void const* cSrc,
                     size_t cSrcSize, HUF_DTable const* DTable, int bmi2)
 {
+    clock_t const start = clock();
 #if DYNAMIC_BMI2
     if (bmi2) {
 # if ZSTD_ENABLE_ASM_X86_64_BMI2
-        return HUF_decompress4X1_usingDTable_internal_bmi2_asm(dst, dstSize, cSrc, cSrcSize, DTable);
+        size_t result = HUF_decompress4X1_usingDTable_internal_bmi2_asm(dst, dstSize, cSrc, cSrcSize, DTable);
 # else
-        return HUF_decompress4X1_usingDTable_internal_bmi2(dst, dstSize, cSrc, cSrcSize, DTable);
+        size_t result = HUF_decompress4X1_usingDTable_internal_bmi2(dst, dstSize, cSrc, cSrcSize, DTable);
 # endif
     }
 #else
@@ -755,10 +763,13 @@ static size_t HUF_decompress4X1_usingDTable_internal(void* dst, size_t dstSize, 
 #endif
 
 #if ZSTD_ENABLE_ASM_X86_64_BMI2 && defined(__BMI2__)
-    return HUF_decompress4X1_usingDTable_internal_bmi2_asm(dst, dstSize, cSrc, cSrcSize, DTable);
+    size_t result = HUF_decompress4X1_usingDTable_internal_bmi2_asm(dst, dstSize, cSrc, cSrcSize, DTable);
 #else
-    return HUF_decompress4X1_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable);
+    size_t result = HUF_decompress4X1_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable);
 #endif
+    clock_t const end = clock();
+    printf("%lu\n", end-start);
+    return result;
 }
 
 
@@ -1065,6 +1076,8 @@ size_t HUF_readDTableX2_wksp_bmi2(HUF_DTable* DTable,
                        const void* src, size_t srcSize,
                              void* workSpace, size_t wkspSize, int bmi2)
 {
+    clock_t const start = clock();
+
     U32 tableLog, maxW, nbSymbols;
     DTableDesc dtd = HUF_getDTableDesc(DTable);
     U32 maxTableLog = dtd.maxTableLog;
@@ -1094,15 +1107,6 @@ size_t HUF_readDTableX2_wksp_bmi2(HUF_DTable* DTable,
 
     /* find maxWeight */
     for (maxW = tableLog; wksp->rankStats[maxW]==0; maxW--) {}  /* necessarily finds a solution before 0 */
-
-    /* print out rankStats for tinyNN */
-    printf("BLOCK_%d,", global_block_count++);
-    printf("STRATEGY_X2,");
-    for (size_t i=0; i <= tableLog; i++) {
-        printf("%d", wksp->rankStats[i]);
-        if (i < tableLog) printf(",");
-    }
-    printf("\n");
 
     /* Get start index of each weight */
     {   U32 w, nextRankStart = 0;
@@ -1152,6 +1156,20 @@ size_t HUF_readDTableX2_wksp_bmi2(HUF_DTable* DTable,
     dtd.tableLog = (BYTE)maxTableLog;
     dtd.tableType = 1;
     ZSTD_memcpy(DTable, &dtd, sizeof(dtd));
+
+    clock_t const end = clock();
+
+    /* print out rankStats for tinyNN */
+    printf("CHOSEN_STRATEGY_X2,");
+    printf("%u,", tableLog);
+    for (size_t i=0; i <= tableLog; i++) {
+        printf("%d", wksp->rankStats[i]);
+        if (i < tableLog) printf(",");
+    }
+    printf("\n");
+
+    printf("%lu\n", end - start);
+
     return iSize;
 }
 
@@ -1456,12 +1474,14 @@ HUF_decompress4X2_usingDTable_internal_bmi2_asm(
 static size_t HUF_decompress4X2_usingDTable_internal(void* dst, size_t dstSize, void const* cSrc,
                     size_t cSrcSize, HUF_DTable const* DTable, int bmi2)
 {
+    clock_t const start = clock();
+    size_t result;
 #if DYNAMIC_BMI2
     if (bmi2) {
 # if ZSTD_ENABLE_ASM_X86_64_BMI2
-        return HUF_decompress4X2_usingDTable_internal_bmi2_asm(dst, dstSize, cSrc, cSrcSize, DTable);
+        result = HUF_decompress4X2_usingDTable_internal_bmi2_asm(dst, dstSize, cSrc, cSrcSize, DTable);
 # else
-        return HUF_decompress4X2_usingDTable_internal_bmi2(dst, dstSize, cSrc, cSrcSize, DTable);
+        result = HUF_decompress4X2_usingDTable_internal_bmi2(dst, dstSize, cSrc, cSrcSize, DTable);
 # endif
     }
 #else
@@ -1469,10 +1489,13 @@ static size_t HUF_decompress4X2_usingDTable_internal(void* dst, size_t dstSize, 
 #endif
 
 #if ZSTD_ENABLE_ASM_X86_64_BMI2 && defined(__BMI2__)
-    return HUF_decompress4X2_usingDTable_internal_bmi2_asm(dst, dstSize, cSrc, cSrcSize, DTable);
+    result = HUF_decompress4X2_usingDTable_internal_bmi2_asm(dst, dstSize, cSrc, cSrcSize, DTable);
 #else
-    return HUF_decompress4X2_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable);
+    result = HUF_decompress4X2_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable);
 #endif
+    clock_t const end = clock();
+    printf("%lu\n", end-start);
+    return result;
 }
 
 HUF_DGEN(HUF_decompress1X2_usingDTable_internal)
@@ -1582,7 +1605,6 @@ size_t HUF_decompress4X_usingDTable(void* dst, size_t maxDstSize,
 }
 
 
-#if !defined(HUF_FORCE_DECOMPRESS_X1) && !defined(HUF_FORCE_DECOMPRESS_X2)
 typedef struct { U32 tableTime; U32 decode256Time; } algo_time_t;
 static const algo_time_t algoTime[16 /* Quantization */][2 /* single, double */] =
 {
@@ -1604,7 +1626,6 @@ static const algo_time_t algoTime[16 /* Quantization */][2 /* single, double */]
     {{1377,185}, {1731,202}},   /* Q ==14 : 87-93% */
     {{1412,185}, {1695,202}},   /* Q ==15 : 93-99% */
 };
-#endif
 
 /** HUF_selectDecoder() :
  *  Tells which decoder is likely to decode faster,
@@ -1615,24 +1636,27 @@ U32 HUF_selectDecoder (size_t dstSize, size_t cSrcSize)
 {
     assert(dstSize > 0);
     assert(dstSize <= 128*1024);
-#if defined(HUF_FORCE_DECOMPRESS_X1)
-    (void)dstSize;
-    (void)cSrcSize;
-    return 0;
-#elif defined(HUF_FORCE_DECOMPRESS_X2)
-    (void)dstSize;
-    (void)cSrcSize;
-    return 1;
-#else
+
+    printf("BLOCK_%d,", global_block_count++);
+    printf("%lu,%lu,",dstSize, cSrcSize);
+
+
     /* decoder timing evaluation */
     {   U32 const Q = (cSrcSize >= dstSize) ? 15 : (U32)(cSrcSize * 16 / dstSize);   /* Q < 16 */
         U32 const D256 = (U32)(dstSize >> 8);
         U32 const DTime0 = algoTime[Q][0].tableTime + (algoTime[Q][0].decode256Time * D256);
         U32 DTime1 = algoTime[Q][1].tableTime + (algoTime[Q][1].decode256Time * D256);
         DTime1 += DTime1 >> 5;  /* small advantage to algorithm using less memory, to reduce cache eviction */
-        return DTime1 < DTime0;
+        U32 const selection = DTime1 < DTime0;
+        printf("%s,", selection ? "PREDICTED_STRATEGY_X2" : "PREDICTED_STRATEGY_X1");
+    #if defined(HUF_FORCE_DECOMPRESS_X1)
+        return 0;
+    #elif defined(HUF_FORCE_DECOMPRESS_X2)
+        return 1;
+    #else
+        return selection;
+    #endif
     }
-#endif
 }
 
 
