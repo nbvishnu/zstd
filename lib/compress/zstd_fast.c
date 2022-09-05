@@ -224,7 +224,8 @@ _start: /* Requires: ip0 */
         hashTable[hash0] = current0;
 
         /* check repcode at ip[2] */
-        if ((MEM_read32(ip2) == rval) & (rep_offset1 > 0)) {
+        /* Disable repcode check to simulate accelerator behavior */
+        if (0 && (MEM_read32(ip2) == rval) & (rep_offset1 > 0)) {
             ip0 = ip2;
             match0 = ip0 - rep_offset1;
             mLength = ip0[-1] == match0[-1];
@@ -387,7 +388,8 @@ _match: /* Requires: ip0, match0, offcode */
         hashTable[ZSTD_hashPtr(ip0-2, hlog, mls)] = (U32)(ip0-2-base);
 
         if (rep_offset2 > 0) { /* rep_offset2==0 means rep_offset2 is invalidated */
-            while ( (ip0 <= ilimit) && (MEM_read32(ip0) == MEM_read32(ip0 - rep_offset2)) ) {
+            /* Disable repcode check to simulate accelerator behavior */
+            while (0 && (ip0 <= ilimit) && (MEM_read32(ip0) == MEM_read32(ip0 - rep_offset2)) ) {
                 /* store sequence */
                 size_t const rLength = ZSTD_count(ip0+4, ip0+4-rep_offset2, iend) + 4;
                 { U32 const tmpOff = rep_offset2; rep_offset2 = rep_offset1; rep_offset1 = tmpOff; } /* swap rep_offset2 <=> rep_offset1 */

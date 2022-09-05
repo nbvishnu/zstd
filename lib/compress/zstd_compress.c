@@ -5943,10 +5943,11 @@ ZSTD_copySequencesToSeqStoreExplicitBlockDelim(ZSTD_CCtx* cctx,
     ZSTD_memcpy(updatedRepcodes.rep, cctx->blockState.prevCBlock->rep, sizeof(repcodes_t));
     for (; idx < inSeqsSize && (inSeqs[idx].matchLength != 0 || inSeqs[idx].offset != 0); ++idx) {
         U32 const litLength = inSeqs[idx].litLength;
-        U32 const ll0 = (litLength == 0);
+        // U32 const ll0 = (litLength == 0);
         U32 const matchLength = inSeqs[idx].matchLength;
-        U32 const offBase = ZSTD_finalizeOffBase(inSeqs[idx].offset, updatedRepcodes.rep, ll0);
-        ZSTD_updateRep(updatedRepcodes.rep, offBase, ll0);
+        // U32 const offBase = ZSTD_finalizeOffBase(inSeqs[idx].offset, updatedRepcodes.rep, ll0);
+        U32 const offBase = OFFSET_TO_OFFBASE(inSeqs[idx].offset);
+        // ZSTD_updateRep(updatedRepcodes.rep, offBase, ll0);
 
         DEBUGLOG(6, "Storing sequence: (of: %u, ml: %u, ll: %u)", offBase, matchLength, litLength);
         if (cctx->appliedParams.validateSequences) {

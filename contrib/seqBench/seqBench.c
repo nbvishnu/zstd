@@ -28,12 +28,16 @@ int main(int argc, char *argv[]) {
     ZSTD_Sequence *seqs = (ZSTD_Sequence*)malloc(seqsSize * sizeof(ZSTD_Sequence));
     char *outBuf = malloc(ZSTD_compressBound(inBufSize));
 
+    ZSTD_CCtx_setParameter(zc, ZSTD_c_compressionLevel, ZSTD_fast);
     ZSTD_generateSequences(zc, seqs, seqsSize, inBuf, inBufSize);
     ZSTD_CCtx_setParameter(zc, ZSTD_c_blockDelimiters, ZSTD_sf_explicitBlockDelimiters);
     size_t outBufSize = ZSTD_compressSequences(zc, outBuf, inBufSize, seqs, seqsSize, inBuf, inBufSize);
     if (ZSTD_isError(outBufSize)) {
         printf("ERROR: %lu\n", outBufSize);
         return 1;
+    } else {
+        printf("Uncompressed size: %lu\n", inBufSize);
+        printf("Compressed size: %lu\n", outBufSize);
     }
 
     char *validationBuf = malloc(inBufSize);
