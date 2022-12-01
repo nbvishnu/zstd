@@ -3006,7 +3006,8 @@ static size_t ZSTD_buildSeqStore(ZSTD_CCtx* zc, const void* src, size_t srcSize)
                 zc->externalMatchCtx.seqBuffer,
                 zc->externalMatchCtx.seqBufferCapacity,
                 src, srcSize,
-                NULL, 0  /* dict and dictSize, currently not supported */
+                NULL, 0,  /* dict and dictSize, currently not supported */
+                zc->appliedParams.compressionLevel
             );
 
             if (nbExternalSeqs <= zc->externalMatchCtx.seqBufferCapacity) {
