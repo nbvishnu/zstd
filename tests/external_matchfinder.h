@@ -20,7 +20,8 @@ typedef enum {
     EMF_ONE_BIG_SEQ = 1,
     EMF_LOTS_OF_SEQS = 2,
     EMF_BIG_ERROR = 3,
-    EMF_SMALL_ERROR = 4
+    EMF_SMALL_ERROR = 4,
+    EMF_RLE_TEST = 5
 } EMF_testCase;
 
 size_t zstreamExternalMatchFinder(

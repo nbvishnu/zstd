@@ -3766,7 +3766,7 @@ ZSTD_compressSeqStore_singleBlock(ZSTD_CCtx* zc, seqStore_t* const seqStore,
     FORWARD_IF_ERROR(cSeqsSize, "ZSTD_entropyCompressSeqStore failed!");
 
     if (!zc->isFirstBlock &&
-        cSeqsSize < rleMaxLength &&
+        //cSeqsSize < rleMaxLength &&
         ZSTD_isRLE((BYTE const*)src, srcSize)) {
         /* We don't want to emit our first block as a RLE even if it qualifies because
         * doing so will cause the decoder (cli only) to throw a "should consume all input error."
@@ -4046,7 +4046,7 @@ ZSTD_compressBlock_internal(ZSTD_CCtx* zc,
          * This is only an issue for zstd <= v1.4.3
          */
         !zc->isFirstBlock &&
-        cSize < rleMaxLength &&
+        //cSize < rleMaxLength &&
         ZSTD_isRLE(ip, srcSize))
     {
         cSize = 1;

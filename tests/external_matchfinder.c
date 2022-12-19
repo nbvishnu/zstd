@@ -10,6 +10,7 @@
 
 #include "external_matchfinder.h"
 #include <string.h>
+#include <stdlib.h>
 #include "zstd_compress_internal.h"
 
 #define HSIZE 1024
@@ -75,6 +76,47 @@ static size_t simpleExternalMatchFinder(
     return seqCount;
 }
 
+/* Note: will not parse all inputs correctly, for test use only */
+static size_t rleTestMatchFinder(
+  void* externalMatchState,
+  ZSTD_Sequence* outSeqs, size_t outSeqsCapacity,
+  const void* src, size_t srcSize,
+  const void* dict, size_t dictSize,
+  int compressionLevel
+) {
+    const BYTE* const istart = (const BYTE*)src;
+    const BYTE* const iend = istart + srcSize;
+    const BYTE* ip = istart;
+    const BYTE* anchor = istart;
+    size_t seqCount = 0;
+
+    (void)externalMatchState;
+    (void)dict;
+    (void)dictSize;
+    (void)outSeqsCapacity;
+    (void)compressionLevel;
+
+    srand(0);
+
+    while (ip + 30 + 30 < iend) {
+        U32 step = (rand() % 20) + 4;
+        ZSTD_Sequence const seq = {
+            1, step, step, 0
+        };
+        outSeqs[seqCount++] = seq;
+        ip += step + step;
+        anchor = ip;
+    }
+
+    {   ZSTD_Sequence const finalSeq = {
+            0, (U32)(iend - anchor), 0, 0
+        };
+        outSeqs[seqCount++] = finalSeq;
+    }
+
+    return seqCount;
+}
+
 size_t zstreamExternalMatchFinder(
   void* externalMatchState,
   ZSTD_Sequence* outSeqs, size_t outSeqsCapacity,
@@ -95,6 +137,14 @@ size_t zstreamExternalMatchFinder(
             return 1;
          case EMF_LOTS_OF_SEQS:
             return simpleExternalMatchFinder(
+                externalMatchState,
+                outSeqs, outSeqsCapacity,
+                src, srcSize,
+                dict, dictSize,
+                compressionLevel
+            );
+        case EMF_RLE_TEST:
+            return rleTestMatchFinder(
                 externalMatchState,
                 outSeqs, outSeqsCapacity,
                 src, srcSize,

@@ -1841,8 +1841,9 @@ static int basicUnitTests(U32 seed, double compressibility, int bigTests)
         size_t const checkBufSize = CNBufferSize;
         BYTE* checkBuf = (BYTE*)malloc(checkBufSize);
         int enableFallback;
-        size_t res;
         EMF_testCase externalMatchState;
+
+        CHECK(dstBuf == NULL || checkBuf == NULL, "allocation failed");
 
         ZSTD_CCtx_reset(zc, ZSTD_reset_session_and_parameters);
 
@@ -1872,6 +1873,7 @@ static int basicUnitTests(U32 seed, double compressibility, int bigTests)
 
             /* Test external matchfinder success scenarios */
             for (testCaseId = 0; testCaseId < EMF_numSuccessCases; testCaseId++) {
+                size_t res;
                 externalMatchState = EMF_successCases[testCaseId];
                 ZSTD_CCtx_reset(zc, ZSTD_reset_session_only);
                 CHECK_Z(ZSTD_CCtx_setParameter(zc, ZSTD_c_enableMatchFinderFallback, enableFallback));
@@ -1883,6 +1885,7 @@ static int basicUnitTests(U32 seed, double compressibility, int bigTests)
 
             /* Test external matchfinder failure scenarios */
             for (testCaseId = 0; testCaseId < EMF_numFailureCases; testCaseId++) {
+                size_t res;
                 externalMatchState = EMF_failureCases[testCaseId];
                 ZSTD_CCtx_reset(zc, ZSTD_reset_session_only);
                 CHECK_Z(ZSTD_CCtx_setParameter(zc, ZSTD_c_enableMatchFinderFallback, enableFallback));
@@ -1900,12 +1903,15 @@ static int basicUnitTests(U32 seed, double compressibility, int bigTests)
             }
 
             /* Test compression with external matchfinder + empty src buffer */
-            externalMatchState = EMF_ZERO_SEQS;
-            ZSTD_CCtx_reset(zc, ZSTD_reset_session_only);
-            CHECK_Z(ZSTD_CCtx_setParameter(zc, ZSTD_c_enableMatchFinderFallback, enableFallback));
-            res = ZSTD_compress2(zc, dstBuf, dstBufSize, CNBuffer, 0);
-            CHECK(ZSTD_isError(res), "EMF: Compression error: %s", ZSTD_getErrorName(res));
-            CHECK(ZSTD_decompress(checkBuf, checkBufSize, dstBuf, res) != 0, "EMF: Empty src round trip failed!");
+            {
+                size_t res;
+                externalMatchState = EMF_ZERO_SEQS;
+                ZSTD_CCtx_reset(zc, ZSTD_reset_session_only);
+                CHECK_Z(ZSTD_CCtx_setParameter(zc, ZSTD_c_enableMatchFinderFallback, enableFallback));
+                res = ZSTD_compress2(zc, dstBuf, dstBufSize, CNBuffer, 0);
+                CHECK(ZSTD_isError(res), "EMF: Compression error: %s", ZSTD_getErrorName(res));
+                CHECK(ZSTD_decompress(checkBuf, checkBufSize, dstBuf, res) != 0, "EMF: Empty src round trip failed!");
+            }
         }
 
         /* Test that reset clears the external matchfinder */
@@ -1914,6 +1920,36 @@ static int basicUnitTests(U32 seed, double compressibility, int bigTests)
         CHECK_Z(ZSTD_CCtx_setParameter(zc, ZSTD_c_enableMatchFinderFallback, 0));
         CHECK_Z(ZSTD_compress2(zc, dstBuf, dstBufSize, CNBuffer, CNBufferSize));
 
+        /* Test RLE handling */
+        {
+            size_t emfRes;
+            size_t normalRes;
+            size_t rleBufSize = CNBufferSize;
+            BYTE* rleBuf = (BYTE*)malloc(rleBufSize);
+            CHECK(rleBuf == NULL, "allocation failed");
+            memset(rleBuf, 0x42, rleBufSize);
+
+            ZSTD_CCtx_reset(zc, ZSTD_reset_session_and_parameters);
+            normalRes = ZSTD_compress2(zc, dstBuf, dstBufSize, rleBuf, rleBufSize);
+
+            ZSTD_registerExternalMatchFinder(
+                zc,
+                &externalMatchState,
+                zstreamExternalMatchFinder
+            );
+            externalMatchState = EMF_RLE_TEST;
+            emfRes = ZSTD_compress2(zc, dstBuf, dstBufSize, rleBuf, rleBufSize);
+
+            CHECK(ZSTD_isError(normalRes), "EMF: Compression error: %s", ZSTD_getErrorName(normalRes));
+            CHECK(ZSTD_isError(emfRes), "EMF: Compression error: %s", ZSTD_getErrorName(emfRes));
+            CHECK_Z(ZSTD_decompress(checkBuf, checkBufSize, dstBuf, emfRes));
+            CHECK(memcmp(rleBuf, checkBuf, rleBufSize) != 0, "EMF: Corruption!");
+            CHECK(emfRes != normalRes, "EMF: RLE compressed size doesn't match, %zu != %zu", emfRes, normalRes);
+
+            free(rleBuf);
+        }
+
+        ZSTD_CCtx_reset(zc, ZSTD_reset_session_and_parameters);
         free(dstBuf);
         free(checkBuf);
     }
