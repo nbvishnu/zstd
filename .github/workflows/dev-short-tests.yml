@@ -393,41 +393,44 @@ jobs:
 #       run: |
 #         LDFLAGS="-static" CC=$XCC QEMU_SYS=$XEMU make clean check
 
-#   mingw-short-test:
-#     runs-on: windows-2019
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         include: [
-#           { compiler: gcc, platform: x64, script: "CFLAGS=-Werror make -j allzstd DEBUGLEVEL=2"},
-#           { compiler: gcc, platform: x86, script: "CFLAGS=-Werror make -j allzstd"},
-#           { compiler: clang, platform: x64, script: "CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1"},
-#         ]
-#     steps:
-#     - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # tag=v3
-#     - name: Mingw short test
-#       run: |
-#         ECHO "Building ${{matrix.compiler}} ${{matrix.platform}}"
-#         $env:PATH_ORIGINAL = $env:PATH
-#         $env:PATH_MINGW32 = "C:\msys64\mingw32\bin"
-#         $env:PATH_MINGW64 = "C:\msys64\mingw64\bin"
-#         COPY C:\msys64\usr\bin\make.exe C:\msys64\mingw32\bin\make.exe
-#         COPY C:\msys64\usr\bin\make.exe C:\msys64\mingw64\bin\make.exe
-#         IF ("${{matrix.platform}}" -eq "x64")
-#         {
-#             $env:PATH = $env:PATH_MINGW64 + ";" + $env:PATH_ORIGINAL
-#         }
-#         ELSEIF ("${{matrix.platform}}" -eq "x86")
-#         {
-#             $env:PATH = $env:PATH_MINGW32 + ";" + $env:PATH_ORIGINAL
-#         }
-#         make -v
-#         sh -c "${{matrix.compiler}} -v"
-#         $env:CC = "${{matrix.compiler}}"
-#         sh -c "${{matrix.script}}"
-#         ECHO "Testing ${{matrix.compiler}} ${{matrix.platform}}"
-#         make clean
-#         make check
+  mingw-short-test:
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          { compiler: gcc, platform: x64, script: "CFLAGS=-Werror make -j allzstd DEBUGLEVEL=2"},
+          { compiler: gcc, platform: x86, script: "CFLAGS=-Werror make -j allzstd"},
+          { compiler: clang, platform: x64, script: "CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1"},
+        ]
+    steps:
+    - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # tag=v3
+    - name: Mingw short test
+      run: |
+        ECHO "Building ${{matrix.compiler}} ${{matrix.platform}}"
+        $env:PATH_ORIGINAL = $env:PATH
+        $env:PATH_MINGW32 = "C:\msys64\mingw32\bin"
+        $env:PATH_MINGW64 = "C:\msys64\mingw64\bin"
+        $env:PATH = "C:\msys64\usr\bin;$env:PATH"
+        where msys2
+        msys2 -c "'pacman' '--noconfirm' '-S' '--needed' '--overwrite' '*' 'make' 'clang'"
+        COPY C:\msys64\usr\bin\make.exe C:\msys64\mingw32\bin\make.exe
+        COPY C:\msys64\usr\bin\make.exe C:\msys64\mingw64\bin\make.exe
+        IF ("${{matrix.platform}}" -eq "x64")
+        {
+            $env:PATH = $env:PATH_MINGW64 + ";" + $env:PATH_ORIGINAL
+        }
+        ELSEIF ("${{matrix.platform}}" -eq "x86")
+        {
+            $env:PATH = $env:PATH_MINGW32 + ";" + $env:PATH_ORIGINAL
+        }
+        make -v
+        sh -c "${{matrix.compiler}} -v"
+        $env:CC = "${{matrix.compiler}}"
+        sh -c "${{matrix.script}}"
+        ECHO "Testing ${{matrix.compiler}} ${{matrix.platform}}"
+        make clean
+        make check
 
   mingw-clang:
     runs-on: windows-latest
@@ -438,13 +441,13 @@ jobs:
       - uses: actions/checkout@v3
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: mingw64
+          msystem: clang64
           update: true
           install: make clang
       - name: Mingw short test
         run: |
           make -v
-          export PATH="$MINGW_PREFIX/bin:$PATH"
+          gcc -v
           clang -v
           CC=clang CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1
 
