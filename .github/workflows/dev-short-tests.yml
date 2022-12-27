@@ -438,8 +438,11 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        compiler: [gcc, clang]
-        msystem: [MINGW32, MINGW64]
+        include: [
+          { compiler: gcc, msystem: MINGW32, cflags: "-Werror"},
+          { compiler: gcc, msystem: MINGW64, cflags: "-Werror"},
+          { compiler: clang, msystem: MINGW64, cflags: "--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion"},
+        ]
     defaults:
       run:
         shell: msys2 {0}
@@ -456,7 +459,7 @@ jobs:
     - run: pacman --noconfirm -S mingw-w64-i686-clang
       if: ${{ (matrix.msystem == 'MINGW32') && (matrix.compiler == 'clang') }}
     - run: ${{ matrix.compiler }} --version
-    - run: make CC=${{ matrix.compiler }} CFLAGS="-Werror"
+    - run: make CC=${{ matrix.compiler }} CFLAGS="${{ matrix.cflags }}"
 
 #   visual-runtime-tests:
 #     runs-on: windows-2019
