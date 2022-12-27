@@ -397,7 +397,7 @@ jobs:
         # $env:PATH_CLANG64 = "C:\msys64\clang64\bin"
         make -v
         ${{matrix.compiler}} -v
-        CC = ${{matrix.compiler}}
+        export CC = ${{matrix.compiler}}
         ${{matrix.script}}
         echo "Testing ${{matrix.compiler}} ${{matrix.platform}}"
         make clean
