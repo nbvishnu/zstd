@@ -1,16 +1,16 @@
-name: dev-short-tests
-# Faster tests: mostly build tests, along with some other
-# misc tests
+# name: dev-short-tests
+# # Faster tests: mostly build tests, along with some other
+# # misc tests
 
-concurrency:
-  group: fast-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: fast-${{ github.ref }}
+#   cancel-in-progress: true
 
-on:
-  pull_request:
-    branches: [ dev, release, actionsTest ]
+# on:
+#   pull_request:
+#     branches: [ dev, release, actionsTest ]
 
-jobs:
+# jobs:
 #   linux-kernel:
 #     runs-on: ubuntu-latest
 #     steps:
@@ -375,33 +375,15 @@ jobs:
 #       run: |
 #         LDFLAGS="-static" CC=$XCC QEMU_SYS=$XEMU make clean check
 
-  ssh:
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          install: git mingw-w64-ucrt-x86_64-gcc
-      - name: CI-Build
-        run: |
-          echo 'Running in MSYS2!'
-          git clone git@github.com:owenthereal/upterm.git
-          cd upterm
-          go install ./cmd/upterm/...
-
   mingw-short-test:
-    runs-on: windows-2019
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         include: [
           { compiler: gcc, platform: x64, script: "CFLAGS=-Werror make -j allzstd DEBUGLEVEL=2"},
           { compiler: gcc, platform: x86, script: "CFLAGS=-Werror make -j allzstd"},
-          { compiler: clang, platform: x64, script: "CFLAGS='-Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1"},
+          { compiler: clang, platform: x64, script: "CFLAGS='--target=x86_64-w64-mingw32 --with-native-system-header-dir=/mingw64/include -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1"},
         ]
     steps:
     - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # tag=v3
@@ -427,7 +409,7 @@ jobs:
         make -v
         sh -c "${{matrix.compiler}} -v"
         $env:CC = "${{matrix.compiler}}"
-        sh -c "set -e; ${{matrix.script}}"
+        sh -c "${{matrix.script}}"
         ECHO "Testing ${{matrix.compiler}} ${{matrix.platform}}"
         make clean
         make check
