@@ -377,9 +377,6 @@ jobs:
 
   mingw-short-test:
     runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
     strategy:
       fail-fast: true
       matrix:
@@ -391,6 +388,7 @@ jobs:
     steps:
     - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # tag=v3
     - name: Mingw short test
+      shell: bash
       run: |
         echo "Building ${{matrix.compiler}} ${{matrix.platform}}"
         # $env:PATH_ORIGINAL = $env:PATH
