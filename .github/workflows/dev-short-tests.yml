@@ -451,7 +451,7 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         msystem: ${{ matrix.msystem }}
-        install: make
+        install: make diff
     - run: pacman --noconfirm -S gcc
       if: ${{ matrix.compiler == 'gcc' }}
     - run: pacman --noconfirm -S mingw-w64-x86_64-clang
@@ -462,7 +462,7 @@ jobs:
     - run: export CC=${{ matrix.compiler }}
     - run: CFLAGS="${{ matrix.cflags }}" CC=${{ matrix.compiler }} make -j allzstd
     - run: |
-        echo "Testing ${{matrix.compiler}} ${{matrix.platform}}"
+        echo "Testing ${{matrix.compiler}} ${{matrix.msystem}}"
         make clean
         make check
 
