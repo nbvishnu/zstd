@@ -459,7 +459,12 @@ jobs:
     - run: pacman --noconfirm -S mingw-w64-i686-clang
       if: ${{ (matrix.msystem == 'MINGW32') && (matrix.compiler == 'clang') }}
     - run: ${{ matrix.compiler }} --version
+    - run: export CC=${{ matrix.compiler }}
     - run: CFLAGS="${{ matrix.cflags }}" CC=${{ matrix.compiler }} make -j allzstd
+    - run: |
+        echo "Testing ${{matrix.compiler}} ${{matrix.platform}}"
+        make clean
+        make check
 
 #   visual-runtime-tests:
 #     runs-on: windows-2019
