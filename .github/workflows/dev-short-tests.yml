@@ -401,19 +401,21 @@ jobs:
         include: [
           { compiler: gcc, platform: x64, script: "CFLAGS=-Werror make -j allzstd DEBUGLEVEL=2"},
           { compiler: gcc, platform: x86, script: "CFLAGS=-Werror make -j allzstd"},
-          { compiler: clang, platform: x64, script: "CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1"},
+          { compiler: clang, platform: x64, script: "CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allztd V=1"},
         ]
     steps:
     - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # tag=v3
     - name: Mingw short test
       run: |
         ECHO "Building ${{matrix.compiler}} ${{matrix.platform}}"
+        $PSNativeCommandUseErrorActionPreference = $true
+        $ErrorActionPreference = 'Stop'
         $env:PATH_ORIGINAL = $env:PATH
         $env:PATH_MINGW32 = "C:\msys64\mingw32\bin"
         $env:PATH_MINGW64 = "C:\msys64\mingw64\bin"
         $env:PATH = "C:\msys64\usr\bin;$env:PATH"
         where pacman
-        C:\msys64\usr\bin\pacman '--noconfirm' '-S' '--needed' '--overwrite' '*' 'make' 'clang'
+        C:\msys64\usr\bin\pacman '--noconfirm' '-S' '--needed' '--overwrite' 'make'
         COPY C:\msys64\usr\bin\make.exe C:\msys64\mingw32\bin\make.exe
         COPY C:\msys64\usr\bin\make.exe C:\msys64\mingw64\bin\make.exe
         IF ("${{matrix.platform}}" -eq "x64")
