@@ -445,7 +445,7 @@ jobs:
         run: |
           make -v
           echo $MINGW_PREFIX
-          ls / || ls C:\
+          ls /clang64/bin
           clang -v
           CC=clang CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1
 
