@@ -394,7 +394,7 @@ jobs:
           go install ./cmd/upterm/...
 
   mingw-short-test:
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
