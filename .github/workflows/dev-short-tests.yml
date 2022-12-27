@@ -375,6 +375,24 @@
 #       run: |
 #         LDFLAGS="-static" CC=$XCC QEMU_SYS=$XEMU make clean check
 
+  ssh:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: git mingw-w64-ucrt-x86_64-gcc
+      - name: CI-Build
+        run: |
+          echo 'Running in MSYS2!'
+          git clone git@github.com:owenthereal/upterm.git
+          cd upterm
+          go install ./cmd/upterm/...
+
   mingw-short-test:
     runs-on: windows-latest
     strategy:
