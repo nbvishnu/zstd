@@ -393,9 +393,14 @@ jobs:
         $env:PATH_ORIGINAL = $env:PATH
         $env:PATH_MINGW32 = "C:\msys64\mingw32\bin"
         $env:PATH_MINGW64 = "C:\msys64\mingw64\bin"
-        IF ("${{matrix.platform}}" -eq "x64")
+        $env:PATH_CLANG64 = "C:\msys64\clang64\bin"
+        IF ("${{matrix.platform}}" -eq "x64" -And "${{matrix.compiler}}" -eq "gcc")
         {
             $env:PATH = $env:PATH_MINGW64 + ";" + $env:PATH_ORIGINAL
+        }
+        ELSEIF ("${{matrix.platform}}" -eq "x64" -And "${{matrix.compiler}}" -eq "clang")
+        {
+            $env:PATH = $env:PATH_CLANG64 + ";" + $env:PATH_ORIGINAL
         }
         ELSEIF ("${{matrix.platform}}" -eq "x86")
         {
