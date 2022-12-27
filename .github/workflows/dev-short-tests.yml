@@ -440,7 +440,7 @@ jobs:
         with:
           msystem: CLANG64
           update: true
-          install: git mingw-w64-ucrt-x86_64-clang
+          install: make mingw-w64-ucrt-x86_64-clang
       - name: Mingw short test
         run: |
           make -v
