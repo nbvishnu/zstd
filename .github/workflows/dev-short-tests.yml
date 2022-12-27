@@ -1,16 +1,16 @@
-# name: dev-short-tests
-# # Faster tests: mostly build tests, along with some other
-# # misc tests
+name: dev-short-tests
+# Faster tests: mostly build tests, along with some other
+# misc tests
 
-# concurrency:
-#   group: fast-${{ github.ref }}
-#   cancel-in-progress: true
+concurrency:
+  group: fast-${{ github.ref }}
+  cancel-in-progress: true
 
-# on:
-#   pull_request:
-#     branches: [ dev, release, actionsTest ]
+on:
+  pull_request:
+    branches: [ dev, release, actionsTest ]
 
-# jobs:
+jobs:
 #   linux-kernel:
 #     runs-on: ubuntu-latest
 #     steps:
