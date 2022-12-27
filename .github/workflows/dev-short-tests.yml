@@ -438,9 +438,9 @@ jobs:
       - uses: actions/checkout@v3
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: CLANG64
+          msystem: mingw64
           update: true
-          install: make clang
+          install: make mingw-w64-clang
       - name: Mingw short test
         run: |
           make -v
