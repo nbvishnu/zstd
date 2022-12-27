@@ -394,7 +394,7 @@ jobs:
 #         LDFLAGS="-static" CC=$XCC QEMU_SYS=$XEMU make clean check
 
   mingw-short-test:
-    runs-on: windows-2019
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
