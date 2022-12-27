@@ -452,6 +452,7 @@ jobs:
       with:
         msystem: ${{ matrix.msystem }}
         install: make mingw-w64-diffutils
+        update: true
     - run: pacman --noconfirm -S gcc
       if: ${{ matrix.compiler == 'gcc' }}
     - run: pacman --noconfirm -S mingw-w64-x86_64-clang
