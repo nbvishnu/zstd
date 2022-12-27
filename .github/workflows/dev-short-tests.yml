@@ -427,7 +427,7 @@ jobs:
         make -v
         sh -c "${{matrix.compiler}} -v"
         $env:CC = "${{matrix.compiler}}"
-        sh -c "${{matrix.script}}"
+        sh -c "set -e; ${{matrix.script}}"
         ECHO "Testing ${{matrix.compiler}} ${{matrix.platform}}"
         make clean
         make check
