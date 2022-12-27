@@ -444,8 +444,8 @@ jobs:
       - name: Mingw short test
         run: |
           make -v
-          export $CC=clang
-          CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1
+          clang -v
+          CC=clang CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1
 
 #   visual-runtime-tests:
 #     runs-on: windows-2019
