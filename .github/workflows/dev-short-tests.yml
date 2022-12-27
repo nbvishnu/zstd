@@ -395,7 +395,7 @@ jobs:
         # $env:PATH_MINGW32 = "C:\msys64\mingw32\bin"
         # $env:PATH_MINGW64 = "C:\msys64\mingw64\bin"
         # $env:PATH_CLANG64 = "C:\msys64\clang64\bin"
-        msys
+        msys2
         pacman -Syu
         exit
         export PATH="C:\msys64\clang64\bin:$PATH"
