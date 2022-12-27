@@ -444,8 +444,7 @@ jobs:
       - name: Mingw short test
         run: |
           make -v
-          echo $MINGW_PREFIX
-          ls /clang64/bin
+          export PATH="$MINGW_PREFIX/bin:$PATH"
           clang -v
           CC=clang CFLAGS='--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion' make -j allzstd V=1
 
