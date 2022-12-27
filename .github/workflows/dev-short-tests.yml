@@ -429,11 +429,7 @@ jobs:
 #         make clean
 #         make check
 
-name: MSYS2
-on: [push, pull_request]
-
-jobs:
-  msys2-ucrt64:
+  mingw-clang:
     runs-on: windows-latest
     defaults:
       run:
