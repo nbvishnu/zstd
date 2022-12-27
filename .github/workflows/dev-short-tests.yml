@@ -440,7 +440,7 @@ jobs:
         with:
           msystem: mingw64
           update: true
-          install: make mingw-w64-clang
+          install: make clang
       - name: Mingw short test
         run: |
           make -v
