@@ -456,7 +456,7 @@ jobs:
     - run: pacman --noconfirm -S mingw-w64-i686-clang
       if: ${{ (matrix.msystem == 'MINGW32') && (matrix.compiler == 'clang') }}
     - run: ${{ matrix.compiler }} --version
-    - run: make CC=${{ matrix.compiler }} CFLAGS="-Werror -Wconversion -Wno-sign-conversion"
+    - run: make CC=${{ matrix.compiler }} CFLAGS="-Werror"
 
 #   visual-runtime-tests:
 #     runs-on: windows-2019
