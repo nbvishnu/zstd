@@ -412,8 +412,8 @@ jobs:
         $env:PATH_MINGW32 = "C:\msys64\mingw32\bin"
         $env:PATH_MINGW64 = "C:\msys64\mingw64\bin"
         $env:PATH = "C:\msys64\usr\bin;$env:PATH"
-        where msys2
-        msys2 -c "'pacman' '--noconfirm' '-S' '--needed' '--overwrite' '*' 'make' 'clang'"
+        where pacman
+        C:\msys64\usr\bin\pacman '--noconfirm' '-S' '--needed' '--overwrite' '*' 'make' 'clang'
         COPY C:\msys64\usr\bin\make.exe C:\msys64\mingw32\bin\make.exe
         COPY C:\msys64\usr\bin\make.exe C:\msys64\mingw64\bin\make.exe
         IF ("${{matrix.platform}}" -eq "x64")
