@@ -435,7 +435,7 @@ jobs:
   #       make check
 
   windows:
-    runs-on: windows-2019 # @nocommit
+    runs-on: windows-latest
     strategy:
       matrix:
         include: [
