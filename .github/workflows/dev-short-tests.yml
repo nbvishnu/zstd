@@ -435,7 +435,7 @@ jobs:
   #       make check
 
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2019 # @nocommit
     strategy:
       matrix:
         include: [
@@ -453,16 +453,17 @@ jobs:
         msystem: ${{ matrix.msystem }}
         install: make diffutils
         update: true
+    # Based on https://ariya.io/2020/07/on-github-actions-with-msys2
     - run: pacman --noconfirm -S gcc
       if: ${{ matrix.compiler == 'gcc' }}
     - run: pacman --noconfirm -S mingw-w64-x86_64-clang
       if: ${{ (matrix.msystem == 'MINGW64') && (matrix.compiler == 'clang') }}
     - run: pacman --noconfirm -S mingw-w64-i686-clang
       if: ${{ (matrix.msystem == 'MINGW32') && (matrix.compiler == 'clang') }}
-    - run: ${{ matrix.compiler }} --version
-    - run: export CC=${{ matrix.compiler }}
-    - run: CFLAGS="${{ matrix.cflags }}" CC=${{ matrix.compiler }} make -j allzstd
     - run: |
+        ${{ matrix.compiler }} --version
+        export CC=${{ matrix.compiler }}
+        CFLAGS="${{ matrix.cflags }}" CC=${{ matrix.compiler }} make -j allzstd
         echo "Testing ${{matrix.compiler}} ${{matrix.msystem}}"
         make clean
         make check
