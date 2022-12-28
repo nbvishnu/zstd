@@ -461,10 +461,10 @@ jobs:
     - run: pacman --noconfirm -S mingw-w64-i686-clang
       if: ${{ (matrix.msystem == 'MINGW32') && (matrix.compiler == 'clang') }}
     - run: |
-        ${{ matrix.compiler }} --version
         export CC=${{ matrix.compiler }}
-        CFLAGS="${{ matrix.cflags }}" CC=${{ matrix.compiler }} make -j allzstd
-        echo "Testing ${{matrix.compiler}} ${{matrix.msystem}}"
+        $CC --version
+        CFLAGS="${{ matrix.cflags }}" make -j allzstd
+        echo "Testing $CC ${{ matrix.msystem }}"
         make clean
         make check
 
