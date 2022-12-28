@@ -454,13 +454,17 @@ jobs:
         install: make diffutils
         update: true
     # Based on https://ariya.io/2020/07/on-github-actions-with-msys2
-    - run: pacman --noconfirm -S gcc
+    - name: install mingw gcc
+      run: pacman --noconfirm -S gcc
       if: ${{ matrix.compiler == 'gcc' }}
-    - run: pacman --noconfirm -S mingw-w64-x86_64-clang
+    - name: install mingw clang x86_64
+      run: pacman --noconfirm -S mingw-w64-x86_64-clang
       if: ${{ (matrix.msystem == 'MINGW64') && (matrix.compiler == 'clang') }}
-    - run: pacman --noconfirm -S mingw-w64-i686-clang
+    - name: install mingw clang i686
+      run: pacman --noconfirm -S mingw-w64-i686-clang
       if: ${{ (matrix.msystem == 'MINGW32') && (matrix.compiler == 'clang') }}
-    - run: |
+    - name: run mingw tests
+      run: |
         export CC=${{ matrix.compiler }}
         $CC --version
         CFLAGS="${{ matrix.cflags }}" make -j allzstd
