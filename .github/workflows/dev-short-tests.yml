@@ -451,10 +451,8 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         msystem: ${{ matrix.msystem }}
-        install: make mingw-w64-diffutils
+        install: make diffutils
         update: true
-    - run: choco install diffutils && which diff
-      shell: bash
     - run: pacman --noconfirm -S gcc
       if: ${{ matrix.compiler == 'gcc' }}
     - run: pacman --noconfirm -S mingw-w64-x86_64-clang
