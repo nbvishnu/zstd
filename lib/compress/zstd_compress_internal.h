@@ -32,7 +32,7 @@ extern "C" {
 /*-*************************************
 *  Constants
 ***************************************/
-#define kSearchStrength      8
+#define kSearchStrength      20
 #define HASH_READ_SIZE       8
 #define ZSTD_DUBT_UNSORTED_MARK 1   /* For btlazy2 strategy, index ZSTD_DUBT_UNSORTED_MARK==1 means "unsorted".
                                        It could be confused for a real successor at index "1", if sorted as larger than its predecessor.
@@ -807,6 +807,8 @@ static size_t ZSTD_hash8Ptr(const void* p, U32 h) { return ZSTD_hash8(MEM_readLE
 MEM_STATIC FORCE_INLINE_ATTR
 size_t ZSTD_hashPtr(const void* p, U32 hBits, U32 mls)
 {
+    //return MEM_readLE32(p) >> (32 - hBits);
+
     /* Although some of these hashes do support hBits up to 64, some do not.
      * To be on the safe side, always avoid hBits > 32. */
     assert(hBits <= 32);

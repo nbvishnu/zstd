@@ -216,35 +216,12 @@ _start: /* Requires: ip0 */
     idx = hashTable[hash0];
 
     do {
-        /* load repcode match for ip[2]*/
-        const U32 rval = MEM_read32(ip2 - rep_offset1);
-
         /* write back hash table entry */
         current0 = (U32)(ip0 - base);
         hashTable[hash0] = current0;
 
-        /* check repcode at ip[2] */
-        if ((MEM_read32(ip2) == rval) & (rep_offset1 > 0)) {
-            ip0 = ip2;
-            match0 = ip0 - rep_offset1;
-            mLength = ip0[-1] == match0[-1];
-            ip0 -= mLength;
-            match0 -= mLength;
-            offcode = REPCODE1_TO_OFFBASE;
-            mLength += 4;
-
-            /* First write next hash table entry; we've already calculated it.
-             * This write is known to be safe because the ip1 is before the
-             * repcode (ip2). */
-            hashTable[hash1] = (U32)(ip1 - base);
-
-            goto _match;
-        }
-
         /* load match for ip[0] */
         if (idx >= prefixStartIndex) {
-            mval = MEM_read32(base + idx);
-        } else {
             mval = MEM_read32(ip0) ^ 1; /* guaranteed to not match. */
         }
 
@@ -278,8 +255,6 @@ _start: /* Requires: ip0 */
 
         /* load match for ip[0] */
         if (idx >= prefixStartIndex) {
-            mval = MEM_read32(base + idx);
-        } else {
             mval = MEM_read32(ip0) ^ 1; /* guaranteed to not match. */
         }
 
