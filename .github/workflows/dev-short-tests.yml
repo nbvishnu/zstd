@@ -382,7 +382,7 @@ jobs:
         include: [
           { compiler: gcc, msystem: MINGW32, cflags: "-Werror"},
           { compiler: gcc, msystem: MINGW64, cflags: "-Werror"},
-          { compiler: clang, msystem: MINGW64, cflags: "--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion"},
+          { compiler: clang, msystem: MINGW64, cflags: "--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion -Wno-unused-command-line-argument"},
         ]
     defaults:
       run:
@@ -396,16 +396,17 @@ jobs:
         update: true
     # Based on https://ariya.io/2020/07/on-github-actions-with-msys2
     - name: install mingw gcc
-      run: pacman --noconfirm -S gcc
       if: ${{ matrix.compiler == 'gcc' }}
+      run: pacman --noconfirm -S gcc
     - name: install mingw clang x86_64
-      run: pacman --noconfirm -S mingw-w64-x86_64-clang
       if: ${{ (matrix.msystem == 'MINGW64') && (matrix.compiler == 'clang') }}
+      run: pacman --noconfirm -S mingw-w64-x86_64-clang
     - name: install mingw clang i686
-      run: pacman --noconfirm -S mingw-w64-i686-clang
       if: ${{ (matrix.msystem == 'MINGW32') && (matrix.compiler == 'clang') }}
+      run: pacman --noconfirm -S mingw-w64-i686-clang
     - name: run mingw tests
       run: |
+        make -v
         export CC=${{ matrix.compiler }}
         $CC --version
         CFLAGS="${{ matrix.cflags }}" make -j allzstd
@@ -414,7 +415,7 @@ jobs:
         make check
 
   visual-runtime-tests:
-    runs-on: windows-2019
+    runs-on: windows-latest
     strategy:
       matrix:
         platform: [x64, Win32]
