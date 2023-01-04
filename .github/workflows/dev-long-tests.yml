@@ -235,7 +235,7 @@ jobs:
         make -v
         $CC --version
         $CXX --version
-        make -C fuzztest
+        make -C tests fuzztest
 
   # lasts ~20mn
   oss-fuzz:
