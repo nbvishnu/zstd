@@ -229,8 +229,8 @@ jobs:
         export CC="gcc"
         export CXX="g++"
         export CFLAGS="${{ matrix.cflags }}"
-        export FUZZERTEST = "-T2mn"
-        export ZSTREAM_TESTTIME = "-T2mn"
+        export FUZZERTEST="-T2mn"
+        export ZSTREAM_TESTTIME="-T2mn"
         echo "Testing $CC $CXX ${{ matrix.msystem }}"
         make -v
         $CC --version
