@@ -263,9 +263,9 @@ jobs:
           { name: "VS 2022 x64 Release", platform: x64, configuration: Release, toolset: v170, runner: windows-2022},
           { name: "VS 2022 Win32 Release", platform: Win32, configuration: Release, toolset: v170, runner: windows-2022},
           { name: "VS 2019 x64 Release", platform: Win32, configuration: Release, toolset: v160, runner: windows-2019},
-          { name: "VS 2019 Win32 Release", platform: x64, configuration: Release, toolset: v160, runner: windows-2019}
+          { name: "VS 2019 Win32 Release", platform: x64, configuration: Release, toolset: v160, runner: windows-2019},
         ]
-    runs-on: $${{matrix.runner}}
+    runs-on: ${{matrix.runner}}
     steps:
     - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # tag=v3
     - name: Add MSBuild to PATH
@@ -274,7 +274,7 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: >
-        msbuild "build\VS2010\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=$${matrix.toolset}}
+        msbuild "build\VS2010\zstd.sln" /m /verbosity:minimal /property:PlatformToolset=${matrix.toolset}}
         /t:Clean,Build /p:Platform=${{matrix.platform}} /p:Configuration=${{matrix.configuration}}
 
   # This tests that we don't accidently grow the size too much.
