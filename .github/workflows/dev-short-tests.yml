@@ -259,8 +259,14 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-        platform: [x64, Win32]
-        configuration: [Debug, Release]
+        include: [
+          { name: "VS 2022 x64 Debug", platform: x64, configuration: Debug, toolset: v170, runner: "windows-2022"},
+          { name: "VS 2022 Win32 Debug", platform: Win32, configuration: Debug, toolset: v170, runner: "windows-2022"},
+          { name: "VS 2022 x64 Release", platform: x64, configuration: Release, toolset: v170, runner: "windows-2022"},
+          { name: "VS 2022 Win32 Release", platform: Win32, configuration: Release, toolset: v170, runner: "windows-2022"},
+          { name: "VS 2019 x64 Release", platform: Win32, configuration: Release, toolset: v160, runner: "windows-2019"},
+          { name: "VS 2019 Win32 Release", platform: x64, configuration: Release, toolset: v160, runner: "windows-2019"},
+        ]
     steps:
     - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # tag=v3
     - name: Add MSBuild to PATH
