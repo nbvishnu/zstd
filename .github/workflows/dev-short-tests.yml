@@ -235,12 +235,12 @@ jobs:
             runner: "windows-2022"
           - generator: "Visual Studio 16 2019"
             flags: "-A x64"
-            runner: "windows-2022"
+            runner: "windows-2019"
           - generator: "Visual Studio 16 2019"
             flags: "-A Win32"
-            runner: "windows-2022"
+            runner: "windows-2019"
           - generator: "MinGW Makefiles"
-            runner: "windows-2022"
+            runner: "windows-latest"
     runs-on: ${{matrix.runner}}
     steps:
     - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # tag=v3
