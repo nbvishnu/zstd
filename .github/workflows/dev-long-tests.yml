@@ -219,7 +219,7 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         msystem: ${{ matrix.msystem }}
-        install: make diffutils
+        install: make
         update: true
     # Based on https://ariya.io/2020/07/on-github-actions-with-msys2
     - name: install mingw gcc
@@ -228,7 +228,7 @@ jobs:
       run: |
         export CC="gcc"
         export CXX="g++"
-        export CFLAGS="${{ matrix.cflags }}" make -j allzstd
+        export CFLAGS="${{ matrix.cflags }}"
         export FUZZERTEST = "-T2mn"
         export ZSTREAM_TESTTIME = "-T2mn"
         echo "Testing $CC $CXX ${{ matrix.msystem }}"

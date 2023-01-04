@@ -223,14 +223,18 @@ jobs:
         run: |
           meson install -C builddir --destdir staging/
 
-  cmake-visual-2022:
-    runs-on: windows-2022
+  cmake-visual-studio:
+    runs-on: windows-latest
     strategy:
       matrix:
         include:
           - generator: "Visual Studio 17 2022"
             flags: "-A x64"
           - generator: "Visual Studio 17 2022"
+            flags: "-A Win32"
+          - generator: "Visual Studio 16 2019"
+            flags: "-A x64"
+          - generator: "Visual Studio 16 2019"
             flags: "-A Win32"
           - generator: "MinGW Makefiles"
     steps:
