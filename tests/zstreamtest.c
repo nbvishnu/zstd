@@ -40,6 +40,7 @@
 #include "util.h"
 #include "timefn.h"       /* UTIL_time_t, UTIL_clockSpanMicro, UTIL_getTime */
 #include "external_matchfinder.h"   /* zstreamExternalMatchFinder, EMF_testCase */
+#include "decompress/zstd_decompress_internal.h"
 
 /*-************************************
  *  Constants
@@ -150,13 +151,13 @@ static size_t ZSTD_initDStream_usingDDict_helper(ZSTD_DStream* zds, const ZSTD_D
         if (ZSTD_isError(resetRes)) return resetRes;   }
     {   const size_t refRes = ZSTD_DCtx_refDDict(zds, ddict);
         if (ZSTD_isError(refRes)) return refRes;   }
-    return ZSTD_startingInputLength(dctx->format);
+    return ZSTD_startingInputLength(zds->format);
 }
-#define ZSTD_initDStream_usingDict(zds, dict, dictSize) (
-    ZSTD_initDStream_usingDict_helper(zds, dict, dictSize)
+#define ZSTD_initDStream_usingDict(zds, dict, dictSize) (         \
+    ZSTD_initDStream_usingDict_helper((zds), (dict), (dictSize))  \
 )
-#define ZSTD_initDStream_usingDDict(zds, dict, dictSize) (
-    ZSTD_initDStream_usingDDict_helper(zds, ddict)
+#define ZSTD_initDStream_usingDDict(zds, ddict) (       \
+    ZSTD_initDStream_usingDDict_helper((zds), (ddict))  \
 )
 
 
