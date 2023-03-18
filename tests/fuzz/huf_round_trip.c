@@ -23,6 +23,7 @@
 #include "fuzz_helpers.h"
 #include "fuzz_data_producer.h"
 #include "common/bits.h"
+#include "fuzz_third_party_seq_prod.h"
 
 static size_t adjustTableLog(size_t tableLog, size_t maxSymbol)
 {

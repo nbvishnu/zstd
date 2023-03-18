@@ -130,11 +130,12 @@ static size_t roundTripTest(void *result, size_t resultCapacity,
 
 int LLVMFuzzerTestOneInput(const uint8_t *src, size_t size)
 {
+    FUZZ_SEQ_PROD_SETUP();
+
     size_t const rBufSize = size;
     void* rBuf = FUZZ_malloc(rBufSize);
     size_t cBufSize = ZSTD_compressBound(size);
     void* cBuf;
-    FUZZ_SEQ_PROD_SETUP;
 
     /* Give a random portion of src data to the producer, to use for
     parameter generation. The rest will be used for (de)compression */
@@ -159,8 +160,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *src, size_t size)
     }
 
     roundTripTest(rBuf, rBufSize, cBuf, cBufSize, src, size, producer);
-
-    FUZZ_SEQ_PROD_TEARDOWN;
     free(rBuf);
     free(cBuf);
     FUZZ_dataProducer_free(producer);
@@ -168,5 +167,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *src, size_t size)
     ZSTD_freeCCtx(cctx); cctx = NULL;
     ZSTD_freeDCtx(dctx); dctx = NULL;
 #endif
+    FUZZ_SEQ_PROD_TEARDOWN();
     return 0;
 }

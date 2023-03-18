@@ -88,24 +88,24 @@ size_t FUZZ_thirdPartySeqProd(void* sequenceProducerState,
 
 /* These macros are internal helpers. You do not need to worry about them. */
 #ifdef FUZZ_THIRD_PARTY_SEQ_PROD
-#define FUZZ_SEQ_PROD_SETUP                                                    \
+#define FUZZ_SEQ_PROD_SETUP()                                                  \
   do {                                                                         \
     FUZZ_ASSERT(FUZZ_seqProdSetup() == 0);                                     \
     FUZZ_seqProdState = FUZZ_createSeqProdState();                             \
     FUZZ_ASSERT(FUZZ_seqProdState != NULL);                                    \
   } while (0)
 #else
-#define FUZZ_SEQ_PROD_SETUP
+#define FUZZ_SEQ_PROD_SETUP()
 #endif
 
 #ifdef FUZZ_THIRD_PARTY_SEQ_PROD
-#define FUZZ_SEQ_PROD_TEARDOWN                                                 \
+#define FUZZ_SEQ_PROD_TEARDOWN()                                               \
   do {                                                                         \
     FUZZ_ASSERT(FUZZ_freeSeqProdState(FUZZ_seqProdState) == 0);                \
     FUZZ_ASSERT(FUZZ_seqProdTearDown() == 0);                                  \
   } while (0)
 #else
-#define FUZZ_SEQ_PROD_TEARDOWN
+#define FUZZ_SEQ_PROD_TEARDOWN()
 #endif
 
 #ifdef __cplusplus
