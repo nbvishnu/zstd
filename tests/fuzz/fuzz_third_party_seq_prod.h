@@ -38,6 +38,7 @@ extern "C" {
  *
  * An example implementation of this header is provided at tests/fuzz/seq_prod_fuzz_example/.
  * Use these commands to fuzz with the example code:
+ *   $ make corpora
  *   $ make -C seq_prod_fuzz_example/
  *   $ python3 ./fuzz.py build all --enable-fuzzer --enable-asan --enable-ubsan --cc clang --cxx clang++ --custom-seq-prod=seq_prod_fuzz_example/example_seq_prod.o
  *   $ python3 ./fuzz.py libfuzzer simple_round_trip
