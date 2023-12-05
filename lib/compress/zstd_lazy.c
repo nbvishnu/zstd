@@ -817,7 +817,7 @@ FORCE_INLINE_TEMPLATE void ZSTD_row_prefetch(U32 const* hashTable, BYTE const* t
     PREFETCH_L1(hashTable + relRow);
     if (rowLog >= 5) {
         PREFETCH_L1(hashTable + relRow + 16);
-        /* Note: prefetching more of the hash table does not appear to be beneficial for 128-entry rows */
+        /* Note: prefetching more of the hash table does not appear to be beneficial for 128-byte rows */
     }
     PREFETCH_L1(tagTable + relRow);
     if (rowLog == 6) {
