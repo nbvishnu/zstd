@@ -75,7 +75,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *src, size_t size)
     void* buf;
     size_t bufSize;
     size = FUZZ_dataProducer_reserveDataPrefix(producer);
-    bufSize = MAX(10 * size, ZSTD_BLOCKSIZE_MAX);
+    bufSize = 1000;
 
     /* Allocate all buffers and contexts if not already allocated */
     buf = FUZZ_malloc(bufSize);
@@ -87,26 +87,20 @@ int LLVMFuzzerTestOneInput(const uint8_t *src, size_t size)
         FUZZ_ZASSERT(ZSTD_DCtx_reset(dstream, ZSTD_reset_session_only));
     }
 
-    stableOutBuffer = FUZZ_dataProducer_uint32Range(producer, 0, 10) == 5;
-    if (stableOutBuffer) {
-      FUZZ_ZASSERT(ZSTD_DCtx_setParameter(dstream, ZSTD_d_stableOutBuffer, 1));
-      out.dst = buf;
-      out.size = bufSize;
-      out.pos = 0;
-    } else {
-      out = makeOutBuffer(producer, buf, bufSize);
-    }
-
-    while (size > 0) {
-        ZSTD_inBuffer in = makeInBuffer(&src, &size, producer);
-        do {
-            size_t const rc = ZSTD_decompressStream(dstream, &out, &in);
-            if (ZSTD_isError(rc)) goto error;
-            if (out.pos == out.size) {
-                if (stableOutBuffer) goto error;
-                out = makeOutBuffer(producer, buf, bufSize);
-            }
-        } while (in.pos != in.size);
+    // Repro for assert failure in zstd_decompress.c
+    {
+        ZSTD_inBuffer in = { src, size, 0 };
+        ZSTD_outBuffer emptyOut = { NULL, 0, 0 };
+        // Note: bufSize = 1000
+        ZSTD_outBuffer realOut = { buf, bufSize, 0 };
+        
+        ZSTD_DCtx_reset(dstream, ZSTD_reset_session_and_parameters);
+        size_t ret1 = ZSTD_decompressStream(dstream, &emptyOut, &in);
+        if (ZSTD_isError(ret1)) {
+          // Fuzzer is unable to trigger the assert if this goto is uncommented
+          // goto error;
+        }
+        ZSTD_decompressStream(dstream, &realOut, &in);
     }
 
 error:
