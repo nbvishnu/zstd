@@ -894,9 +894,23 @@ int main(int const argCount, const char* argv[])
                 if (longCommandWArg(&argument, "--stream-size=")) { streamSrcSize = readSizeTFromChar(&argument); continue; }
                 if (longCommandWArg(&argument, "--target-compressed-block-size=")) { targetCBlockSize = readSizeTFromChar(&argument); continue; }
                 if (longCommandWArg(&argument, "--size-hint=")) { srcSizeHint = readSizeTFromChar(&argument); continue; }
-                if (longCommandWArg(&argument, "--output-dir-flat")) { NEXT_FIELD(outDirName); continue; }
+                if (longCommandWArg(&argument, "--output-dir-flat")) {
+                    NEXT_FIELD(outDirName);
+                    if (strlen(outDirName) == 0) {
+                        DISPLAY("error: output dir cannot be empty string (did you mean to pass '.' instead?)\n");
+                        CLEAN_RETURN(1);
+                    }
+                    continue;
+                }
 #ifdef UTIL_HAS_MIRRORFILELIST
-                if (longCommandWArg(&argument, "--output-dir-mirror")) { NEXT_FIELD(outMirroredDirName); continue; }
+                if (longCommandWArg(&argument, "--output-dir-mirror")) {
+                    NEXT_FIELD(outMirroredDirName);
+                    if (strlen(outMirroredDirName) == 0) {
+                        DISPLAY("error: output dir cannot be empty string (did you mean to pass '.' instead?)\n");
+                        CLEAN_RETURN(1);
+                    }
+                    continue;
+                }
 #endif
                 if (longCommandWArg(&argument, "--patch-from")) { NEXT_FIELD(patchFromDictFileName); continue; }
                 if (longCommandWArg(&argument, "--long")) {
